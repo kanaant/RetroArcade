@@ -53,6 +53,23 @@ npm start
 # Visit http://localhost:3000
 ```
 
+### Docker
+
+You can run the application in a Docker container.
+
+```bash
+# Build and start the container
+docker compose up -d --build
+
+# Stop the container
+docker compose down
+```
+
+The application will be accessible at `http://localhost:3050`.
+
+- **Image Name:** `darksenses-demos-retroarcade`
+- **Container Name:** `ds-retroarcade`
+
 ## 📁 Project Structure
 
 ```
