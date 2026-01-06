@@ -1,0 +1,10 @@
+services:
+  retro-arcade:
+    image: darksenses-demos-retroarcade
+    container_name: ds-retroarcade
+    build: .
+    ports:
+      - "3050:3000"
+    volumes:
+      - ./data:/usr/src/app/data
+    restart: always
