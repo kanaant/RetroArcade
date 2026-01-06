@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RETRO ARCADE - 80s Games Collection</title>
+    <meta
+      name="description"
+      content="Experience the golden age of gaming with our collection of classic 80s arcade games. Tetris, Pacman, Snake, Breakout, Space Invaders, and Pong!"
+    />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="stylesheet" href="shared/arcade-theme.css" />
+    <style>
+      /* Landing Page Specific Styles */
+      .arcade-container {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px 20px;
+        position: relative;
+      }
+
+      /* Animated Stars */
+      .stars {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      .star {
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        background: white;
+        border-radius: 50%;
+        animation: twinkle 2s ease-in-out infinite;
+      }
+
+      @keyframes twinkle {
+        0%,
+        100% {
+          opacity: 0.3;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.5);
+        }
+      }
+
+      /* Main Title */
+      .arcade-title {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .arcade-title h1 {
+        font-family: var(--font-pixel);
+        font-size: clamp(24px, 6vw, 48px);
+        color: var(--neon-pink);
+        text-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink),
+          0 0 40px var(--neon-pink), 0 0 80px var(--neon-pink);
+        animation: titleGlow 3s ease-in-out infinite;
+        letter-spacing: 8px;
+      }
+
+      .arcade-title .subtitle {
+        font-family: var(--font-retro);
+        font-size: clamp(12px, 2vw, 18px);
+        color: var(--neon-cyan);
+        text-shadow: var(--glow-cyan);
+        margin-top: 10px;
+        letter-spacing: 4px;
+      }
+
+      @keyframes titleGlow {
+        0%,
+        100% {
+          text-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink),
+            0 0 40px var(--neon-pink), 0 0 80px var(--neon-pink);
+        }
+        50% {
+          text-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink),
+            0 0 20px var(--neon-pink), 0 0 40px var(--neon-pink);
+        }
+      }
+
+      /* Decorative Line */
+      .neon-line {
+        width: 80%;
+        max-width: 800px;
+        height: 2px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--neon-cyan),
+          var(--neon-pink),
+          var(--neon-cyan),
+          transparent
+        );
+        margin: 30px auto;
+        box-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-cyan);
+      }
+
+      /* Insert Coin Prompt */
+      .insert-coin-prompt {
+        font-family: var(--font-pixel);
+        font-size: 14px;
+        color: var(--neon-yellow);
+        text-shadow: var(--glow-yellow);
+        margin-bottom: 40px;
+        animation: coinBlink 1s steps(2) infinite;
+      }
+
+      /* Games Grid */
+      .games-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 30px;
+        max-width: 1200px;
+        width: 100%;
+        padding: 20px;
+      }
+
+      /* Game Card Enhancements */
+      .game-card {
+        text-decoration: none;
+        min-height: 280px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+
+      .game-icon {
+        font-size: 60px;
+        margin-bottom: 15px;
+        filter: drop-shadow(0 0 10px currentColor);
+        transition: transform 0.3s ease;
+      }
+
+      .game-card:hover .game-icon {
+        transform: scale(1.2) rotate(5deg);
+        animation: iconPulse 0.5s ease-in-out infinite;
+      }
+
+      @keyframes iconPulse {
+        0%,
+        100% {
+          transform: scale(1.2) rotate(5deg);
+        }
+        50% {
+          transform: scale(1.3) rotate(-5deg);
+        }
+      }
+
+      .game-title {
+        font-family: var(--font-pixel);
+        font-size: 16px;
+        color: var(--neon-cyan);
+        text-shadow: var(--glow-cyan);
+        margin-bottom: 10px;
+        letter-spacing: 2px;
+      }
+
+      .game-description {
+        font-family: var(--font-retro);
+        font-size: 12px;
+        color: #888;
+        line-height: 1.6;
+        flex-grow: 1;
+      }
+
+      .game-high-score {
+        font-family: var(--font-pixel);
+        font-size: 10px;
+        color: var(--neon-yellow);
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .play-hint {
+        font-family: var(--font-pixel);
+        font-size: 10px;
+        color: var(--neon-green);
+        margin-top: 10px;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.3s ease;
+      }
+
+      .game-card:hover .play-hint {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Color Themes for Each Game */
+      .game-card.tetris:hover {
+        border-color: var(--neon-cyan);
+      }
+      .game-card.tetris .game-icon {
+        color: var(--neon-cyan);
+      }
+
+      .game-card.pacman:hover {
+        border-color: var(--neon-yellow);
+      }
+      .game-card.pacman .game-icon {
+        color: var(--neon-yellow);
+      }
+
+      .game-card.snake:hover {
+        border-color: var(--neon-green);
+      }
+      .game-card.snake .game-icon {
+        color: var(--neon-green);
+      }
+
+      .game-card.breakout:hover {
+        border-color: var(--neon-orange);
+      }
+      .game-card.breakout .game-icon {
+        color: var(--neon-orange);
+      }
+
+      .game-card.space-invaders:hover {
+        border-color: var(--neon-purple);
+      }
+      .game-card.space-invaders .game-icon {
+        color: var(--neon-purple);
+      }
+
+      .game-card.pong:hover {
+        border-color: var(--neon-pink);
+      }
+      .game-card.pong .game-icon {
+        color: var(--neon-pink);
+      }
+
+      /* Footer */
+      .arcade-footer {
+        margin-top: 60px;
+        text-align: center;
+        font-family: var(--font-retro);
+        font-size: 12px;
+        color: #555;
+      }
+
+      .arcade-footer span {
+        color: var(--neon-pink);
+      }
+
+      /* High Scores Marquee */
+      .marquee-container {
+        width: 100%;
+        max-width: 800px;
+        overflow: hidden;
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid var(--neon-pink);
+        padding: 10px 0;
+        margin: 20px 0;
+      }
+
+      .marquee {
+        display: flex;
+        gap: 50px;
+        animation: marquee 30s linear infinite;
+        white-space: nowrap;
+      }
+
+      .marquee-item {
+        font-family: var(--font-pixel);
+        font-size: 12px;
+        color: var(--neon-yellow);
+        text-shadow: 0 0 5px var(--neon-yellow);
+      }
+
+      @keyframes marquee {
+        0% {
+          transform: translateX(100%);
+        }
+        100% {
+          transform: translateX(-100%);
+        }
+      }
+
+      /* Responsive */
+      @media (max-width: 600px) {
+        .games-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .arcade-title h1 {
+          letter-spacing: 4px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="crt-overlay"></div>
+    <div class="grid-bg"></div>
+    <div class="starfield"></div>
+    <div class="stars" id="stars"></div>
+
+    <div class="arcade-container">
+      <header class="arcade-title">
+        <h1>RETRO ARCADE</h1>
+        <p class="subtitle">★ CLASSIC 80s GAMES ★</p>
+      </header>
+
+      <div class="neon-line"></div>
+
+      <p class="insert-coin-prompt">SELECT A GAME TO PLAY</p>
+
+      <div class="marquee-container">
+        <div class="marquee" id="highScoreMarquee">
+          <span class="marquee-item">🏆 TOP SCORES 🏆</span>
+          <span class="marquee-item">LOADING...</span>
+        </div>
+      </div>
+
+      <div class="games-grid">
+        <a href="tetris/index.html" class="game-card tetris">
+          <div class="game-icon">🎮</div>
+          <h2 class="game-title">TETRIS</h2>
+          <p class="game-description">
+            Stack the falling blocks and clear lines! The classic puzzle game
+            that defined a generation.
+          </p>
+          <div class="game-high-score" id="tetris-score">HIGH: ---</div>
+          <div class="play-hint">▶ PRESS TO PLAY</div>
+        </a>
+
+        <a href="pacman/index.html" class="game-card pacman">
+          <div class="game-icon">👻</div>
+          <h2 class="game-title">PAC-MAN</h2>
+          <p class="game-description">
+            Eat all the dots and avoid the ghosts! Grab power pellets to turn
+            the tables.
+          </p>
+          <div class="game-high-score" id="pacman-score">HIGH: ---</div>
+          <div class="play-hint">▶ PRESS TO PLAY</div>
+        </a>
+
+        <a href="snake/index.html" class="game-card snake">
+          <div class="game-icon">🐍</div>
+          <h2 class="game-title">SNAKE</h2>
+          <p class="game-description">
+            Guide the snake to eat food and grow longer. Don't hit the walls or
+            yourself!
+          </p>
+          <div class="game-high-score" id="snake-score">HIGH: ---</div>
+          <div class="play-hint">▶ PRESS TO PLAY</div>
+        </a>
+
+        <a href="breakout/index.html" class="game-card breakout">
+          <div class="game-icon">🧱</div>
+          <h2 class="game-title">BREAKOUT</h2>
+          <p class="game-description">
+            Bounce the ball and destroy all bricks! Collect power-ups for
+            special abilities.
+          </p>
+          <div class="game-high-score" id="breakout-score">HIGH: ---</div>
+          <div class="play-hint">▶ PRESS TO PLAY</div>
+        </a>
+
+        <a href="space-invaders/index.html" class="game-card space-invaders">
+          <div class="game-icon">👾</div>
+          <h2 class="game-title">SPACE INVADERS</h2>
+          <p class="game-description">
+            Defend Earth from alien invasion! Shoot down waves of descending
+            enemies.
+          </p>
+          <div class="game-high-score" id="space-invaders-score">HIGH: ---</div>
+          <div class="play-hint">▶ PRESS TO PLAY</div>
+        </a>
+
+        <a href="pong/index.html" class="game-card pong">
+          <div class="game-icon">🏓</div>
+          <h2 class="game-title">PONG</h2>
+          <p class="game-description">
+            The grandfather of video games! Challenge the AI or a friend in
+            classic table tennis.
+          </p>
+          <div class="game-high-score" id="pong-score">HIGH: ---</div>
+          <div class="play-hint">▶ PRESS TO PLAY</div>
+        </a>
+      </div>
+
+      <footer class="arcade-footer">
+        <p>© 2026 <span>RETRO ARCADE</span> • CREATED BY <span style="color: #14b3cf; text-shadow: 0 0 10px #14b3cf, 0 0 20px #14b3cf;">DARKSENSES LABS</span> • MADE WITH 💜</p>
+        <p style="margin-top: 10px">
+          Use Arrow Keys or WASD to play • P to Pause
+        </p>
+      </footer>
+    </div>
+
+    <script type="module">
+      import { getTopScore, getTopScoreEntry, getAllHighScores } from "./shared/highscore.js";
+
+      // Create starfield
+      function createStars() {
+        const container = document.getElementById("stars");
+        for (let i = 0; i < 100; i++) {
+          const star = document.createElement("div");
+          star.className = "star";
+          star.style.left = Math.random() * 100 + "%";
+          star.style.top = Math.random() * 100 + "%";
+          star.style.animationDelay = Math.random() * 2 + "s";
+          star.style.animationDuration = 1 + Math.random() * 2 + "s";
+          container.appendChild(star);
+        }
+      }
+
+      // Update high scores display
+      function updateHighScores() {
+        const games = [
+          "tetris",
+          "pacman",
+          "snake",
+          "breakout",
+          "space-invaders",
+          "pong",
+        ];
+        const marqueeItems = [];
+
+        games.forEach((game) => {
+          const entry = getTopScoreEntry(game);
+          const scoreEl = document.getElementById(`${game}-score`);
+          if (scoreEl) {
+            scoreEl.textContent =
+              entry ? `HIGH: ${entry.name} ${entry.score.toLocaleString()}` : "HIGH: ---";
+          }
+          if (entry) {
+            marqueeItems.push(
+              `${game
+                .toUpperCase()
+                .replace("-", " ")}: ${entry.name} ${entry.score.toLocaleString()}`
+            );
+          }
+        });
+
+        // Update marquee
+        const marquee = document.getElementById("highScoreMarquee");
+        if (marqueeItems.length > 0) {
+          marquee.innerHTML = marqueeItems
+            .map((item) => `<span class="marquee-item">🏆 ${item}</span>`)
+            .join("");
+        } else {
+          marquee.innerHTML =
+            '<span class="marquee-item">🎮 NO HIGH SCORES YET - BE THE FIRST! 🎮</span>';
+        }
+      }
+
+      // Initialize
+      createStars();
+      updateHighScores();
+
+      // Add keyboard navigation
+      document.addEventListener("keydown", (e) => {
+        const cards = document.querySelectorAll(".game-card");
+        const focused = document.activeElement;
+        const currentIndex = Array.from(cards).indexOf(focused);
+
+        if (e.key === "ArrowRight" || e.key === "d") {
+          cards[(currentIndex + 1) % cards.length].focus();
+        } else if (e.key === "ArrowLeft" || e.key === "a") {
+          cards[(currentIndex - 1 + cards.length) % cards.length].focus();
+        } else if (e.key === "ArrowDown" || e.key === "s") {
+          cards[Math.min(currentIndex + 3, cards.length - 1)].focus();
+        } else if (e.key === "ArrowUp" || e.key === "w") {
+          cards[Math.max(currentIndex - 3, 0)].focus();
+        }
+      });
+    </script>
+  </body>
+</html>

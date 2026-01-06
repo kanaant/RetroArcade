@@ -1,0 +1,506 @@
+/* ===========================================
+   RETRO ARCADE THEME - 80s Style
+   =========================================== */
+
+/* Google Fonts Import */
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&display=swap");
+
+/* CSS Custom Properties */
+:root {
+  /* Neon Colors */
+  --neon-pink: #ff00ff;
+  --neon-cyan: #00ffff;
+  --neon-green: #39ff14;
+  --neon-yellow: #fff700;
+  --neon-orange: #ff6600;
+  --neon-purple: #bf00ff;
+  --neon-red: #ff0040;
+  --neon-blue: #0066ff;
+
+  /* Background Colors */
+  --bg-dark: #0a0a0f;
+  --bg-darker: #050508;
+  --bg-purple: #1a0a2e;
+  --bg-grid: rgba(255, 0, 255, 0.1);
+
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #aaaaaa;
+
+  /* Fonts */
+  --font-pixel: "Press Start 2P", cursive;
+  --font-retro: "Orbitron", sans-serif;
+
+  /* Glow Effects */
+  --glow-pink: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 40px #ff00ff;
+  --glow-cyan: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 40px #00ffff;
+  --glow-green: 0 0 10px #39ff14, 0 0 20px #39ff14, 0 0 40px #39ff14;
+  --glow-yellow: 0 0 10px #fff700, 0 0 20px #fff700, 0 0 40px #fff700;
+}
+
+/* Reset & Base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: var(--font-retro);
+  overflow-x: hidden;
+}
+
+/* CRT Scanline Effect */
+.crt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  background: linear-gradient(transparent 50%, rgba(0, 0, 0, 0.05) 50%);
+  background-size: 100% 4px;
+}
+
+.crt-overlay::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+}
+
+/* Animated Grid Background */
+.grid-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(var(--bg-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: gridMove 20s linear infinite;
+  perspective: 500px;
+}
+
+@keyframes gridMove {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(50px);
+  }
+}
+
+/* Starfield Background */
+.starfield {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+  background: radial-gradient(
+    ellipse at bottom,
+    var(--bg-purple) 0%,
+    var(--bg-darker) 100%
+  );
+}
+
+/* Neon Text Effects */
+.neon-text {
+  text-shadow: var(--glow-pink);
+  animation: neonFlicker 3s infinite;
+}
+
+.neon-text-cyan {
+  color: var(--neon-cyan);
+  text-shadow: var(--glow-cyan);
+}
+
+.neon-text-green {
+  color: var(--neon-green);
+  text-shadow: var(--glow-green);
+}
+
+.neon-text-yellow {
+  color: var(--neon-yellow);
+  text-shadow: var(--glow-yellow);
+}
+
+@keyframes neonFlicker {
+  0%,
+  19%,
+  21%,
+  23%,
+  25%,
+  54%,
+  56%,
+  100% {
+    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor,
+      0 0 40px currentColor, 0 0 80px currentColor;
+  }
+  20%,
+  24%,
+  55% {
+    text-shadow: none;
+  }
+}
+
+/* Neon Border Box */
+.neon-box {
+  border: 2px solid var(--neon-pink);
+  box-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink),
+    inset 0 0 10px rgba(255, 0, 255, 0.1);
+  background: rgba(10, 10, 15, 0.9);
+}
+
+.neon-box-cyan {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan),
+    inset 0 0 10px rgba(0, 255, 255, 0.1);
+}
+
+/* Retro Button */
+.arcade-btn {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  padding: 15px 30px;
+  background: linear-gradient(180deg, #333 0%, #111 100%);
+  border: 3px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 10px var(--neon-cyan), 0 5px 0 #000,
+    0 6px 10px rgba(0, 0, 0, 0.5);
+}
+
+.arcade-btn:hover {
+  background: linear-gradient(180deg, #444 0%, #222 100%);
+  box-shadow: 0 0 20px var(--neon-cyan), 0 0 40px var(--neon-cyan), 0 5px 0 #000,
+    0 6px 10px rgba(0, 0, 0, 0.5);
+  transform: translateY(-2px);
+}
+
+.arcade-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 0 10px var(--neon-cyan), 0 2px 0 #000;
+}
+
+/* Game Card */
+.game-card {
+  position: relative;
+  background: linear-gradient(
+    180deg,
+    rgba(30, 30, 50, 0.9) 0%,
+    rgba(10, 10, 20, 0.95) 100%
+  );
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.game-card::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(transparent, var(--neon-pink), transparent 30%);
+  animation: cardGlow 4s linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.game-card:hover::before {
+  opacity: 1;
+}
+
+.game-card::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  background: linear-gradient(
+    180deg,
+    rgba(30, 30, 50, 0.95) 0%,
+    rgba(10, 10, 20, 0.98) 100%
+  );
+  border-radius: 8px;
+  z-index: 0;
+}
+
+.game-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.game-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  border-color: var(--neon-pink);
+  box-shadow: 0 0 30px rgba(255, 0, 255, 0.3), 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes cardGlow {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Score Display */
+.score-display {
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  color: var(--neon-yellow);
+  text-shadow: var(--glow-yellow);
+  padding: 10px 20px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid var(--neon-yellow);
+  border-radius: 5px;
+}
+
+/* High Score Table */
+.high-score-table {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.high-score-table th,
+.high-score-table td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.high-score-table th {
+  color: var(--neon-cyan);
+  text-shadow: var(--glow-cyan);
+}
+
+.high-score-table tr:nth-child(1) td {
+  color: var(--neon-yellow);
+}
+
+.high-score-table tr:nth-child(2) td {
+  color: #c0c0c0;
+}
+
+.high-score-table tr:nth-child(3) td {
+  color: #cd7f32;
+}
+
+/* Game Container */
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* Game Canvas Wrapper */
+.game-canvas-wrapper {
+  position: relative;
+  border: 4px solid var(--neon-cyan);
+  box-shadow: 0 0 20px var(--neon-cyan), inset 0 0 20px rgba(0, 255, 255, 0.1);
+  background: #000;
+}
+
+/* Game HUD */
+.game-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+  padding: 15px 0;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+}
+
+.game-hud-item {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px var(--neon-cyan);
+}
+
+/* Overlay Screens */
+.game-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(5px);
+}
+
+.game-overlay h2 {
+  font-family: var(--font-pixel);
+  font-size: 24px;
+  color: var(--neon-pink);
+  text-shadow: var(--glow-pink);
+  margin-bottom: 30px;
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Blinking Text */
+.blink {
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Back Button */
+.back-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  padding: 10px 15px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid var(--neon-pink);
+  color: var(--neon-pink);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.back-btn:hover {
+  background: var(--neon-pink);
+  color: #000;
+  box-shadow: 0 0 20px var(--neon-pink);
+}
+
+/* Lives Display */
+.lives-display {
+  display: flex;
+  gap: 10px;
+}
+
+.life-icon {
+  width: 20px;
+  height: 20px;
+  background: var(--neon-yellow);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--neon-yellow);
+}
+
+/* Level Display */
+.level-display {
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  color: var(--neon-green);
+  text-shadow: var(--glow-green);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .game-hud {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .arcade-btn {
+    font-size: 10px;
+    padding: 12px 24px;
+  }
+}
+
+/* Insert Coin Animation */
+.insert-coin {
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  color: var(--neon-yellow);
+  text-shadow: var(--glow-yellow);
+  animation: coinBlink 1.5s ease-in-out infinite;
+}
+
+@keyframes coinBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Pixel Art Helper Classes */
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Loading Animation */
+.loading-dots::after {
+  content: "";
+  animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0%,
+  20% {
+    content: "";
+  }
+  40% {
+    content: ".";
+  }
+  60% {
+    content: "..";
+  }
+  80%,
+  100% {
+    content: "...";
+  }
+}
