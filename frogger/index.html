@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FROGGER - Retro Arcade</title>
+    <link rel="stylesheet" href="../shared/arcade-theme.css">
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <style>
+        .game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .game-title {
+            font-family: var(--font-pixel);
+            font-size: 32px;
+            color: var(--neon-green);
+            text-shadow: var(--glow-green);
+            margin-bottom: 20px;
+            letter-spacing: 4px;
+        }
+
+        .game-layout {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 120px;
+        }
+
+        .panel-box {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid var(--neon-green);
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 0 10px var(--neon-green);
+        }
+
+        .panel-label {
+            font-family: var(--font-pixel);
+            font-size: 10px;
+            color: var(--neon-green);
+            margin-bottom: 10px;
+        }
+
+        .panel-value {
+            font-family: var(--font-pixel);
+            font-size: 16px;
+            color: var(--neon-yellow);
+            text-shadow: 0 0 10px var(--neon-yellow);
+        }
+
+        .lives-container {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .life-icon {
+            font-size: 16px;
+        }
+
+        .game-canvas-container {
+            position: relative;
+        }
+
+        #game-canvas {
+            display: block;
+            background: #000;
+            border: 4px solid var(--neon-green);
+            box-shadow: 0 0 20px var(--neon-green), inset 0 0 30px rgba(0, 255, 0, 0.1);
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .overlay.hidden { display: none; }
+
+        .overlay h2 {
+            font-family: var(--font-pixel);
+            font-size: 24px;
+            color: var(--neon-pink);
+            text-shadow: var(--glow-pink);
+            margin-bottom: 20px;
+        }
+
+        .overlay p {
+            font-family: var(--font-pixel);
+            font-size: 12px;
+            color: var(--neon-cyan);
+            margin: 10px 0;
+        }
+
+        .start-btn {
+            font-family: var(--font-pixel);
+            font-size: 14px;
+            padding: 15px 30px;
+            margin-top: 20px;
+            background: linear-gradient(180deg, #333, #111);
+            border: 3px solid var(--neon-green);
+            color: var(--neon-green);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .start-btn:hover {
+            background: var(--neon-green);
+            color: #000;
+            box-shadow: 0 0 30px var(--neon-green);
+        }
+
+        .controls-info {
+            margin-top: 30px;
+            font-family: var(--font-pixel);
+            font-size: 8px;
+            color: #666;
+            text-align: center;
+            line-height: 2;
+        }
+
+        .controls-info span { color: var(--neon-green); }
+
+        @media (max-width: 700px) {
+            .game-layout { flex-direction: column; align-items: center; }
+            .side-panel { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div class="grid-bg"></div>
+    <a href="../index.html" class="back-btn">◀ ARCADE</a>
+
+    <div class="game-wrapper">
+        <h1 class="game-title">FROGGER</h1>
+
+        <div class="game-layout">
+            <div class="side-panel">
+                <div class="panel-box">
+                    <div class="panel-label">SCORE</div>
+                    <div class="panel-value" id="score">0</div>
+                </div>
+                <div class="panel-box">
+                    <div class="panel-label">LEVEL</div>
+                    <div class="panel-value" id="level">1</div>
+                </div>
+                <div class="panel-box">
+                    <div class="panel-label">LIVES</div>
+                    <div class="lives-container" id="lives-display"></div>
+                </div>
+                <div class="panel-box">
+                    <div class="panel-label">HIGH</div>
+                    <div class="panel-value" id="high-score">0</div>
+                </div>
+            </div>
+
+            <div class="game-canvas-container">
+                <canvas id="game-canvas" width="560" height="520"></canvas>
+                
+                <div class="overlay" id="start-overlay">
+                    <h2>FROGGER</h2>
+                    <p>CROSS THE ROAD AND RIVER</p>
+                    <button class="start-btn" id="start-btn">START GAME</button>
+                    <div class="controls-info">
+                        <span>↑↓←→</span> or <span>WASD</span> MOVE<br>
+                        <span>P</span> PAUSE
+                    </div>
+                </div>
+
+                <div class="overlay hidden" id="pause-overlay">
+                    <h2>PAUSED</h2>
+                    <p>PRESS P TO CONTINUE</p>
+                </div>
+
+                <div class="overlay hidden" id="gameover-overlay">
+                    <h2>GAME OVER</h2>
+                    <p>SCORE: <span id="final-score">0</span></p>
+                    <div id="high-score-section"></div>
+                    <button class="start-btn" id="restart-btn">PLAY AGAIN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { getTopScore, isHighScore, addHighScore, getTopScoreEntry } from '../shared/highscore.js';
+
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const GAME_NAME = 'frogger';
+        
+        // Grid settings
+        const TILE_SIZE = 40;
+        const COLS = 14;
+        const ROWS = 13;
+        
+        // Game state
+        let score = 0;
+        let level = 1;
+        let lives = 3;
+        let gameStarted = false;
+        let paused = false;
+        let gameOver = false;
+        let animationId;
+        let homesReached = [false, false, false, false, false];
+        
+        // Frog
+        let frog = { x: 7, y: 12, targetX: 7, targetY: 12, moving: false };
+        let frogDying = false;
+        let frogDeathTime = 0;
+        const DEATH_DELAY = 1000; // 1 second death animation
+        
+        // Lanes configuration
+        const lanes = [];
+        
+        function initLanes() {
+            lanes.length = 0;
+            const speedMult = 1 + (level - 1) * 0.15;
+            
+            // Row 0: Home row (safe zones)
+            // Row 1-5: Water (logs and turtles)
+            // Row 6: Safe zone
+            // Row 7-11: Road (cars and trucks)
+            // Row 12: Start
+            
+            // Water lanes (rows 1-5) - slower speeds
+            lanes[1] = { type: 'log', objects: createObjects(3, 3, 0.4 * speedMult, 'right'), color: '#8B4513' };
+            lanes[2] = { type: 'turtle', objects: createObjects(4, 2, -0.3 * speedMult, 'left'), color: '#228B22' };
+            lanes[3] = { type: 'log', objects: createObjects(2, 4, 0.5 * speedMult, 'right'), color: '#8B4513' };
+            lanes[4] = { type: 'turtle', objects: createObjects(3, 2, -0.35 * speedMult, 'left'), color: '#228B22' };
+            lanes[5] = { type: 'log', objects: createObjects(3, 3, 0.3 * speedMult, 'right'), color: '#8B4513' };
+            
+            // Road lanes (rows 7-11) - slower speeds
+            lanes[7] = { type: 'car', objects: createObjects(3, 1, -0.5 * speedMult, 'left'), color: '#ff0055' };
+            lanes[8] = { type: 'truck', objects: createObjects(2, 2, 0.35 * speedMult, 'right'), color: '#ffaa00' };
+            lanes[9] = { type: 'car', objects: createObjects(3, 1, -0.6 * speedMult, 'left'), color: '#00ffff' };
+            lanes[10] = { type: 'car', objects: createObjects(4, 1, 0.4 * speedMult, 'right'), color: '#ff00ff' };
+            lanes[11] = { type: 'truck', objects: createObjects(2, 2, -0.3 * speedMult, 'left'), color: '#00ff00' };
+        }
+        
+        function createObjects(count, width, speed, dir) {
+            const objects = [];
+            const spacing = COLS * TILE_SIZE / count;
+            for (let i = 0; i < count; i++) {
+                objects.push({
+                    x: i * spacing + Math.random() * 50,
+                    width: width * TILE_SIZE,
+                    speed: speed
+                });
+            }
+            return objects;
+        }
+        
+        function updateLivesDisplay() {
+            const el = document.getElementById('lives-display');
+            el.innerHTML = '';
+            for (let i = 0; i < lives; i++) {
+                const life = document.createElement('span');
+                life.className = 'life-icon';
+                life.textContent = '🐸';
+                el.appendChild(life);
+            }
+        }
+        
+        function resetFrog() {
+            frog.x = 7;
+            frog.y = 12;
+            frog.targetX = 7;
+            frog.targetY = 12;
+            frog.moving = false;
+        }
+        
+        function update() {
+            if (!gameStarted || gameOver || paused || frogDying) return;
+            
+            // Update lane objects
+            for (let row = 1; row <= 11; row++) {
+                if (!lanes[row]) continue;
+                for (let obj of lanes[row].objects) {
+                    obj.x += obj.speed;
+                    
+                    // Wrap around
+                    if (obj.speed > 0 && obj.x > COLS * TILE_SIZE) {
+                        obj.x = -obj.width;
+                    } else if (obj.speed < 0 && obj.x + obj.width < 0) {
+                        obj.x = COLS * TILE_SIZE;
+                    }
+                }
+            }
+            
+            // Check frog position
+            const frogX = frog.x * TILE_SIZE;
+            const frogY = frog.y * TILE_SIZE;
+            
+            // Water collision (rows 1-5)
+            if (frog.y >= 1 && frog.y <= 5) {
+                const lane = lanes[frog.y];
+                let onPlatform = false;
+                
+                for (let obj of lane.objects) {
+                    if (frogX + TILE_SIZE/2 > obj.x && frogX + TILE_SIZE/2 < obj.x + obj.width) {
+                        onPlatform = true;
+                        frog.x += obj.speed / TILE_SIZE;
+                        break;
+                    }
+                }
+                
+                if (!onPlatform) {
+                    loseLife();
+                    return;
+                }
+                
+                // Check screen bounds
+                if (frog.x < 0 || frog.x >= COLS) {
+                    loseLife();
+                    return;
+                }
+            }
+            
+            // Road collision (rows 7-11)
+            if (frog.y >= 7 && frog.y <= 11) {
+                const lane = lanes[frog.y];
+                for (let obj of lane.objects) {
+                    if (frogX + TILE_SIZE > obj.x && frogX < obj.x + obj.width) {
+                        loseLife();
+                        return;
+                    }
+                }
+            }
+            
+            // Check home (row 0)
+            if (frog.y === 0) {
+                const homeIndex = Math.floor(frog.x / 2.8);
+                if (homeIndex >= 0 && homeIndex < 5 && !homesReached[homeIndex]) {
+                    homesReached[homeIndex] = true;
+                    score += 50 + level * 10;
+                    document.getElementById('score').textContent = score;
+                    
+                    // Check if all homes reached
+                    if (homesReached.every(h => h)) {
+                        level++;
+                        document.getElementById('level').textContent = level;
+                        score += 1000;
+                        document.getElementById('score').textContent = score;
+                        homesReached.fill(false);
+                        initLanes();
+                    }
+                    
+                    resetFrog();
+                } else {
+                    loseLife();
+                }
+            }
+        }
+        
+        function loseLife() {
+            frogDying = true;
+            frogDeathTime = performance.now();
+            lives--;
+            updateLivesDisplay();
+            
+            // Delay before reset
+            setTimeout(() => {
+                frogDying = false;
+                if (lives <= 0) {
+                    endGame();
+                } else {
+                    resetFrog();
+                }
+            }, DEATH_DELAY);
+        }
+        
+        function draw() {
+            // Background
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            if (!gameStarted) return;
+            
+            // Draw zones
+            // Home zone (row 0)
+            ctx.fillStyle = '#001a00';
+            ctx.fillRect(0, 0, canvas.width, TILE_SIZE);
+            
+            // Draw home spots
+            for (let i = 0; i < 5; i++) {
+                const x = i * 2.8 * TILE_SIZE + TILE_SIZE * 0.4;
+                ctx.fillStyle = homesReached[i] ? '#00ff00' : '#003300';
+                ctx.fillRect(x, 5, TILE_SIZE * 1.5, TILE_SIZE - 10);
+                if (homesReached[i]) {
+                    ctx.fillStyle = '#00ff00';
+                    ctx.font = '24px Arial';
+                    ctx.fillText('🐸', x + 10, TILE_SIZE - 8);
+                }
+            }
+            
+            // Water zone (rows 1-5)
+            ctx.fillStyle = '#000066';
+            ctx.fillRect(0, TILE_SIZE, canvas.width, TILE_SIZE * 5);
+            
+            // Safe zone (row 6)
+            ctx.fillStyle = '#003300';
+            ctx.fillRect(0, TILE_SIZE * 6, canvas.width, TILE_SIZE);
+            
+            // Road zone (rows 7-11)
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, TILE_SIZE * 7, canvas.width, TILE_SIZE * 5);
+            
+            // Draw road lines
+            ctx.strokeStyle = '#ffff00';
+            ctx.setLineDash([20, 20]);
+            for (let i = 8; i <= 11; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * TILE_SIZE);
+                ctx.lineTo(canvas.width, i * TILE_SIZE);
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+            
+            // Start zone (row 12)
+            ctx.fillStyle = '#003300';
+            ctx.fillRect(0, TILE_SIZE * 12, canvas.width, TILE_SIZE);
+            
+            // Draw lane objects
+            for (let row = 1; row <= 11; row++) {
+                if (!lanes[row]) continue;
+                const lane = lanes[row];
+                
+                ctx.fillStyle = lane.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = lane.color;
+                
+                for (let obj of lane.objects) {
+                    const y = row * TILE_SIZE + 5;
+                    const h = TILE_SIZE - 10;
+                    
+                    if (lane.type === 'log' || lane.type === 'turtle') {
+                        ctx.fillRect(obj.x, y, obj.width, h);
+                    } else {
+                        // Cars/trucks with more detail
+                        ctx.fillRect(obj.x, y, obj.width, h);
+                        ctx.fillStyle = '#fff';
+                        ctx.fillRect(obj.x + 5, y + h/4, 8, h/2); // Headlight
+                        ctx.fillStyle = lane.color;
+                    }
+                }
+                ctx.shadowBlur = 0;
+            }
+            
+            // Draw frog
+            const frogX = frog.x * TILE_SIZE;
+            const frogY = frog.y * TILE_SIZE;
+            
+            if (frogDying) {
+                // Death animation - flashing red X and SPLAT text
+                const elapsed = performance.now() - frogDeathTime;
+                const flash = Math.floor(elapsed / 100) % 2;
+                
+                ctx.fillStyle = flash ? '#ff0000' : '#ff6600';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#ff0000';
+                
+                // Draw X
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = ctx.fillStyle;
+                ctx.beginPath();
+                ctx.moveTo(frogX + 5, frogY + 5);
+                ctx.lineTo(frogX + TILE_SIZE - 5, frogY + TILE_SIZE - 5);
+                ctx.moveTo(frogX + TILE_SIZE - 5, frogY + 5);
+                ctx.lineTo(frogX + 5, frogY + TILE_SIZE - 5);
+                ctx.stroke();
+                
+                // SPLAT text
+                ctx.font = '12px "Press Start 2P", monospace';
+                ctx.fillStyle = '#ff0000';
+                ctx.textAlign = 'center';
+                ctx.fillText('SPLAT!', frogX + TILE_SIZE/2, frogY - 5);
+                ctx.textAlign = 'left';
+            } else {
+                ctx.fillStyle = '#00ff00';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00ff00';
+                
+                ctx.beginPath();
+                ctx.arc(frogX + TILE_SIZE/2, frogY + TILE_SIZE/2, TILE_SIZE/2 - 5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Eyes
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(frogX + TILE_SIZE/3, frogY + TILE_SIZE/3, 5, 0, Math.PI * 2);
+                ctx.arc(frogX + TILE_SIZE*2/3, frogY + TILE_SIZE/3, 5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(frogX + TILE_SIZE/3, frogY + TILE_SIZE/3, 2, 0, Math.PI * 2);
+                ctx.arc(frogX + TILE_SIZE*2/3, frogY + TILE_SIZE/3, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            ctx.shadowBlur = 0;
+        }
+        
+        function gameLoop() {
+            update();
+            draw();
+            if (!gameOver) {
+                animationId = requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        function startGame() {
+            score = 0;
+            level = 1;
+            lives = 3;
+            gameOver = false;
+            paused = false;
+            homesReached.fill(false);
+            
+            document.getElementById('score').textContent = '0';
+            document.getElementById('level').textContent = '1';
+            updateLivesDisplay();
+            
+            initLanes();
+            resetFrog();
+            
+            document.getElementById('start-overlay').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.add('hidden');
+            gameStarted = true;
+            
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function togglePause() {
+            if (!gameStarted || gameOver) return;
+            paused = !paused;
+            document.getElementById('pause-overlay').classList.toggle('hidden', !paused);
+            if (!paused) animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function endGame() {
+            gameOver = true;
+            if (animationId) cancelAnimationFrame(animationId);
+            
+            document.getElementById('final-score').textContent = score;
+            
+            const highScoreSection = document.getElementById('high-score-section');
+            highScoreSection.innerHTML = '';
+            
+            if (isHighScore(GAME_NAME, score)) {
+                const savedInitials = localStorage.getItem('retroArcade_playerInitials') || 'AAA';
+                
+                highScoreSection.innerHTML = `
+                    <p style="font-family: var(--font-pixel); font-size: 14px; color: var(--neon-green); margin: 20px 0 10px;">NEW HIGH SCORE!</p>
+                    <p style="font-family: var(--font-pixel); font-size: 10px; color: var(--neon-cyan); margin-bottom: 15px;">ENTER INITIALS:</p>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[0]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[1]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[2]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                    </div>
+                    <button id="save-score-btn" style="font-family: var(--font-pixel); font-size: 10px; padding: 10px 20px; background: var(--neon-green); border: none; color: #000; cursor: pointer;">SAVE SCORE</button>
+                `;
+                
+                const inputs = highScoreSection.querySelectorAll('.hs-input');
+                
+                // Auto-select content when focused
+                inputs.forEach((input, index) => {
+                    input.addEventListener('focus', () => input.select());
+                    input.addEventListener('input', (e) => {
+                        e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                        if (e.target.value && index < 2) {
+                            inputs[index + 1].focus();
+                        }
+                    });
+                });
+                
+                // Delayed focus to ensure DOM is ready
+                setTimeout(() => {
+                    inputs[0].focus();
+                }, 100);
+                
+                document.getElementById('save-score-btn').addEventListener('click', () => {
+                    const name = Array.from(inputs).map(i => i.value || ' ').join('');
+                    addHighScore(GAME_NAME, name, score);
+                    const entry = getTopScoreEntry(GAME_NAME);
+                    document.getElementById('high-score').textContent = entry ? `${entry.name} ${entry.score}` : '0';
+                    highScoreSection.innerHTML = '<p style="color: var(--neon-green); margin-top: 20px; font-family: var(--font-pixel); font-size: 12px;">SCORE SAVED!</p>';
+                });
+            }
+            
+            document.getElementById('gameover-overlay').classList.remove('hidden');
+        }
+        
+        // Controls
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'p' || e.key === 'P') {
+                togglePause();
+                return;
+            }
+            
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                e.preventDefault();
+            }
+            
+            if (!gameStarted || gameOver || paused) return;
+            
+            switch(e.key) {
+                case 'ArrowUp': case 'w': case 'W':
+                    if (frog.y > 0) frog.y--;
+                    score += 10;
+                    document.getElementById('score').textContent = score;
+                    break;
+                case 'ArrowDown': case 's': case 'S':
+                    if (frog.y < 12) frog.y++;
+                    break;
+                case 'ArrowLeft': case 'a': case 'A':
+                    if (frog.x > 0) frog.x--;
+                    break;
+                case 'ArrowRight': case 'd': case 'D':
+                    if (frog.x < COLS - 1) frog.x++;
+                    break;
+            }
+        });
+        
+        // Init
+        const entry = getTopScoreEntry(GAME_NAME);
+        document.getElementById('high-score').textContent = entry ? `${entry.name} ${entry.score}` : '0';
+        updateLivesDisplay();
+    </script>
+</body>
+</html>

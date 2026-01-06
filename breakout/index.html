@@ -652,33 +652,39 @@
             highScoreSection.innerHTML = '';
             
             if (isHighScore(GAME_NAME, score)) {
+                const savedInitials = localStorage.getItem('retroArcade_playerInitials') || 'AAA';
+                
                 highScoreSection.innerHTML = `
                     <p style="font-family: var(--font-pixel); font-size: 14px; color: var(--neon-green); margin: 20px 0 10px;">NEW HIGH SCORE!</p>
                     <p style="font-family: var(--font-pixel); font-size: 10px; color: var(--neon-cyan); margin-bottom: 15px;">ENTER INITIALS:</p>
                     <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
-                        <input type="text" class="hs-input" maxlength="1" value="A" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
-                        <input type="text" class="hs-input" maxlength="1" value="A" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
-                        <input type="text" class="hs-input" maxlength="1" value="A" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[0]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[1]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[2]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
                     </div>
                     <button id="save-score-btn" style="font-family: var(--font-pixel); font-size: 10px; padding: 10px 20px; background: var(--neon-green); border: none; color: #000; cursor: pointer;">SAVE SCORE</button>
                 `;
                 
                 const inputs = highScoreSection.querySelectorAll('.hs-input');
-                inputs[0].focus();
-                inputs[0].select();
                 
+                // Auto-select content when focused
                 inputs.forEach((input, index) => {
+                    input.addEventListener('focus', () => input.select());
                     input.addEventListener('input', (e) => {
                         e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
                         if (e.target.value && index < 2) {
                             inputs[index + 1].focus();
-                            inputs[index + 1].select();
                         }
                     });
                 });
                 
+                // Delayed focus to ensure DOM is ready
+                setTimeout(() => {
+                    inputs[0].focus();
+                }, 100);
+                
                 document.getElementById('save-score-btn').addEventListener('click', () => {
-                    const name = Array.from(inputs).map(i => i.value || 'A').join('');
+                    const name = Array.from(inputs).map(i => i.value || ' ').join('');
                     addHighScore(GAME_NAME, name, score);
                     highScoreEl.textContent = getTopScore(GAME_NAME).toLocaleString();
                     highScoreSection.innerHTML = '<p style="color: var(--neon-green); margin-top: 20px; font-family: var(--font-pixel); font-size: 12px;">SCORE SAVED!</p>';

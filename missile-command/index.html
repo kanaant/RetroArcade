@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MISSILE COMMAND - Retro Arcade</title>
+    <link rel="stylesheet" href="../shared/arcade-theme.css">
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <style>
+        .game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .game-title {
+            font-family: var(--font-pixel);
+            font-size: 32px;
+            color: var(--neon-pink);
+            text-shadow: var(--glow-pink);
+            margin-bottom: 20px;
+            letter-spacing: 4px;
+        }
+
+        .game-layout {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 120px;
+        }
+
+        .panel-box {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid var(--neon-pink);
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 0 10px var(--neon-pink);
+        }
+
+        .panel-label {
+            font-family: var(--font-pixel);
+            font-size: 10px;
+            color: var(--neon-pink);
+            margin-bottom: 10px;
+        }
+
+        .panel-value {
+            font-family: var(--font-pixel);
+            font-size: 16px;
+            color: var(--neon-yellow);
+            text-shadow: 0 0 10px var(--neon-yellow);
+        }
+
+        .cities-display {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .city-icon {
+            font-size: 14px;
+        }
+
+        .game-canvas-container {
+            position: relative;
+        }
+
+        #game-canvas {
+            display: block;
+            background: #000;
+            border: 4px solid var(--neon-pink);
+            box-shadow: 0 0 20px var(--neon-pink), inset 0 0 30px rgba(255, 0, 85, 0.1);
+            cursor: crosshair;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .overlay.hidden { display: none; }
+
+        .overlay h2 {
+            font-family: var(--font-pixel);
+            font-size: 24px;
+            color: var(--neon-pink);
+            text-shadow: var(--glow-pink);
+            margin-bottom: 20px;
+        }
+
+        .overlay p {
+            font-family: var(--font-pixel);
+            font-size: 12px;
+            color: var(--neon-cyan);
+            margin: 10px 0;
+        }
+
+        .start-btn {
+            font-family: var(--font-pixel);
+            font-size: 14px;
+            padding: 15px 30px;
+            margin-top: 20px;
+            background: linear-gradient(180deg, #333, #111);
+            border: 3px solid var(--neon-pink);
+            color: var(--neon-pink);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .start-btn:hover {
+            background: var(--neon-pink);
+            color: #000;
+            box-shadow: 0 0 30px var(--neon-pink);
+        }
+
+        .controls-info {
+            margin-top: 30px;
+            font-family: var(--font-pixel);
+            font-size: 8px;
+            color: #666;
+            text-align: center;
+            line-height: 2;
+        }
+
+        .controls-info span { color: var(--neon-pink); }
+
+        @media (max-width: 700px) {
+            .game-layout { flex-direction: column; align-items: center; }
+            .side-panel { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div class="grid-bg"></div>
+    <a href="../index.html" class="back-btn">◀ ARCADE</a>
+
+    <div class="game-wrapper">
+        <h1 class="game-title">MISSILE COMMAND</h1>
+
+        <div class="game-layout">
+            <div class="side-panel">
+                <div class="panel-box">
+                    <div class="panel-label">SCORE</div>
+                    <div class="panel-value" id="score">0</div>
+                </div>
+                <div class="panel-box">
+                    <div class="panel-label">WAVE</div>
+                    <div class="panel-value" id="wave">1</div>
+                </div>
+                <div class="panel-box">
+                    <div class="panel-label">AMMO</div>
+                    <div class="panel-value" id="ammo">30</div>
+                </div>
+                <div class="panel-box">
+                    <div class="panel-label">CITIES</div>
+                    <div class="cities-display" id="cities-display"></div>
+                </div>
+                <div class="panel-box">
+                    <div class="panel-label">HIGH</div>
+                    <div class="panel-value" id="high-score">0</div>
+                </div>
+            </div>
+
+            <div class="game-canvas-container">
+                <canvas id="game-canvas" width="600" height="400"></canvas>
+                
+                <div class="overlay" id="start-overlay">
+                    <h2>MISSILE COMMAND</h2>
+                    <p>DEFEND THE CITIES</p>
+                    <button class="start-btn" id="start-btn">START GAME</button>
+                    <div class="controls-info">
+                        <span>MOUSE</span> AIM | <span>CLICK</span> FIRE<br>
+                        <span>P</span> PAUSE
+                    </div>
+                </div>
+
+                <div class="overlay hidden" id="pause-overlay">
+                    <h2>PAUSED</h2>
+                    <p>PRESS P TO CONTINUE</p>
+                </div>
+
+                <div class="overlay hidden" id="wave-overlay">
+                    <h2>WAVE <span id="wave-num">1</span></h2>
+                    <p>INCOMING MISSILES!</p>
+                </div>
+
+                <div class="overlay hidden" id="gameover-overlay">
+                    <h2>GAME OVER</h2>
+                    <p>FINAL SCORE: <span id="final-score">0</span></p>
+                    <div id="high-score-section"></div>
+                    <button class="start-btn" id="restart-btn">PLAY AGAIN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { getTopScore, isHighScore, addHighScore, getTopScoreEntry } from '../shared/highscore.js';
+
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const GAME_NAME = 'missile-command';
+        
+        let score = 0;
+        let wave = 1;
+        let ammo = 30;
+        let gameStarted = false;
+        let paused = false;
+        let gameOver = false;
+        let animationId;
+        let waveActive = false;
+        let missilesToSpawn = 0;
+        
+        // Cities
+        const CITY_POSITIONS = [80, 160, 240, 360, 440, 520];
+        let cities = [];
+        
+        // Base (missile launcher)
+        const BASE_X = canvas.width / 2;
+        const BASE_Y = canvas.height - 20;
+        
+        // Game objects
+        let enemyMissiles = [];
+        let playerMissiles = [];
+        let explosions = [];
+        
+        let mouseX = canvas.width / 2;
+        let mouseY = canvas.height / 2;
+        
+        function initCities() {
+            cities = CITY_POSITIONS.map(x => ({ x, alive: true }));
+        }
+        
+        function updateCitiesDisplay() {
+            const el = document.getElementById('cities-display');
+            el.innerHTML = '';
+            for (let city of cities) {
+                const icon = document.createElement('span');
+                icon.className = 'city-icon';
+                icon.textContent = city.alive ? '🏙️' : '💥';
+                el.appendChild(icon);
+            }
+        }
+        
+        function spawnWave() {
+            const missileCount = 5 + wave * 2;
+            const speed = 0.3 + wave * 0.05; // Slower missiles
+            missilesToSpawn = missileCount;
+            waveActive = true;
+            
+            for (let i = 0; i < missileCount; i++) {
+                setTimeout(() => {
+                    if (gameOver) return;
+                    if (paused) {
+                        // Re-queue if paused
+                        setTimeout(() => {
+                            if (!gameOver) spawnSingleMissile(speed);
+                        }, 100);
+                        return;
+                    }
+                    spawnSingleMissile(speed);
+                }, i * (2000 / Math.max(wave, 1))); // Slower spawn rate
+            }
+        }
+        
+        function spawnSingleMissile(speed) {
+            const aliveCities = cities.filter(c => c.alive);
+            if (aliveCities.length === 0) return;
+            
+            const targetCity = aliveCities[Math.floor(Math.random() * aliveCities.length)];
+            
+            enemyMissiles.push({
+                x: Math.random() * canvas.width,
+                y: 0,
+                targetX: targetCity.x,
+                targetY: canvas.height - 40,
+                speed: speed,
+                trail: []
+            });
+            missilesToSpawn--;
+        }
+        
+        function firePlayerMissile(targetX, targetY) {
+            if (ammo <= 0) return;
+            
+            ammo--;
+            document.getElementById('ammo').textContent = ammo;
+            
+            playerMissiles.push({
+                x: BASE_X,
+                y: BASE_Y,
+                targetX: targetX,
+                targetY: targetY,
+                speed: 8,
+                trail: []
+            });
+        }
+        
+        function createExplosion(x, y, isPlayer) {
+            explosions.push({
+                x, y,
+                radius: 0,
+                maxRadius: isPlayer ? 50 : 30,
+                growing: true,
+                isPlayer
+            });
+        }
+        
+        function update() {
+            if (!gameStarted || gameOver || paused) return;
+            
+            // Update enemy missiles
+            for (let i = enemyMissiles.length - 1; i >= 0; i--) {
+                const m = enemyMissiles[i];
+                const dx = m.targetX - m.x;
+                const dy = m.targetY - m.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < m.speed) {
+                    // Hit target
+                    createExplosion(m.targetX, m.targetY, false);
+                    
+                    // Destroy city
+                    for (let city of cities) {
+                        if (Math.abs(city.x - m.targetX) < 30 && city.alive) {
+                            city.alive = false;
+                            updateCitiesDisplay();
+                            break;
+                        }
+                    }
+                    
+                    enemyMissiles.splice(i, 1);
+                    continue;
+                }
+                
+                m.trail.push({ x: m.x, y: m.y });
+                if (m.trail.length > 50) m.trail.shift();
+                
+                m.x += (dx / dist) * m.speed;
+                m.y += (dy / dist) * m.speed;
+            }
+            
+            // Update player missiles
+            for (let i = playerMissiles.length - 1; i >= 0; i--) {
+                const m = playerMissiles[i];
+                const dx = m.targetX - m.x;
+                const dy = m.targetY - m.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < m.speed) {
+                    createExplosion(m.targetX, m.targetY, true);
+                    playerMissiles.splice(i, 1);
+                    continue;
+                }
+                
+                m.trail.push({ x: m.x, y: m.y });
+                if (m.trail.length > 20) m.trail.shift();
+                
+                m.x += (dx / dist) * m.speed;
+                m.y += (dy / dist) * m.speed;
+            }
+            
+            // Update explosions
+            for (let i = explosions.length - 1; i >= 0; i--) {
+                const e = explosions[i];
+                
+                if (e.growing) {
+                    e.radius += 3;
+                    if (e.radius >= e.maxRadius) e.growing = false;
+                } else {
+                    e.radius -= 2;
+                    if (e.radius <= 0) {
+                        explosions.splice(i, 1);
+                        continue;
+                    }
+                }
+                
+                // Check if explosion hits enemy missiles
+                if (e.isPlayer) {
+                    for (let j = enemyMissiles.length - 1; j >= 0; j--) {
+                        const m = enemyMissiles[j];
+                        const dx = m.x - e.x;
+                        const dy = m.y - e.y;
+                        if (Math.sqrt(dx*dx + dy*dy) < e.radius) {
+                            enemyMissiles.splice(j, 1);
+                            score += 25;
+                            document.getElementById('score').textContent = score;
+                        }
+                    }
+                }
+            }
+            
+            // Check game over
+            if (cities.every(c => !c.alive)) {
+                endGame();
+                return;
+            }
+            
+            // Check wave complete - only when wave is active and all missiles are done
+            if (waveActive && enemyMissiles.length === 0 && missilesToSpawn === 0 && explosions.length === 0) {
+                waveActive = false;
+                
+                // Bonus for surviving cities
+                const survivingCities = cities.filter(c => c.alive).length;
+                score += survivingCities * 100;
+                ammo += 10;
+                document.getElementById('score').textContent = score;
+                document.getElementById('ammo').textContent = ammo;
+                
+                wave++;
+                document.getElementById('wave').textContent = wave;
+                document.getElementById('wave-num').textContent = wave;
+                document.getElementById('wave-overlay').classList.remove('hidden');
+                
+                setTimeout(() => {
+                    document.getElementById('wave-overlay').classList.add('hidden');
+                    spawnWave();
+                }, 2000);
+            }
+        }
+        
+        function draw() {
+            // Background
+            ctx.fillStyle = '#0a001a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Stars
+            ctx.fillStyle = '#fff';
+            for (let i = 0; i < 50; i++) {
+                const x = (i * 137) % canvas.width;
+                const y = (i * 89) % (canvas.height - 100);
+                ctx.fillRect(x, y, 1, 1);
+            }
+            
+            if (!gameStarted) return;
+            
+            // Ground
+            ctx.fillStyle = '#3d1a00';
+            ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+            
+            // Cities
+            for (let city of cities) {
+                if (city.alive) {
+                    ctx.fillStyle = '#00ffff';
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#00ffff';
+                    
+                    // Building shapes
+                    ctx.fillRect(city.x - 20, canvas.height - 60, 10, 20);
+                    ctx.fillRect(city.x - 5, canvas.height - 70, 15, 30);
+                    ctx.fillRect(city.x + 10, canvas.height - 55, 10, 15);
+                } else {
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(city.x - 15, canvas.height - 45, 30, 5);
+                }
+            }
+            
+            // Base
+            ctx.fillStyle = '#00ff00';
+            ctx.shadowColor = '#00ff00';
+            ctx.beginPath();
+            ctx.moveTo(BASE_X - 20, canvas.height - 10);
+            ctx.lineTo(BASE_X + 20, canvas.height - 10);
+            ctx.lineTo(BASE_X, canvas.height - 35);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Crosshair
+            ctx.strokeStyle = '#00ff00';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(mouseX - 10, mouseY);
+            ctx.lineTo(mouseX + 10, mouseY);
+            ctx.moveTo(mouseX, mouseY - 10);
+            ctx.lineTo(mouseX, mouseY + 10);
+            ctx.stroke();
+            
+            // Enemy missiles
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 2;
+            for (let m of enemyMissiles) {
+                // Trail
+                if (m.trail.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(m.trail[0].x, m.trail[0].y);
+                    for (let p of m.trail) {
+                        ctx.lineTo(p.x, p.y);
+                    }
+                    ctx.lineTo(m.x, m.y);
+                    ctx.stroke();
+                }
+                
+                // Head
+                ctx.fillStyle = '#ff0000';
+                ctx.beginPath();
+                ctx.arc(m.x, m.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Player missiles
+            ctx.strokeStyle = '#00ff00';
+            for (let m of playerMissiles) {
+                if (m.trail.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(m.trail[0].x, m.trail[0].y);
+                    for (let p of m.trail) {
+                        ctx.lineTo(p.x, p.y);
+                    }
+                    ctx.lineTo(m.x, m.y);
+                    ctx.stroke();
+                }
+                
+                ctx.fillStyle = '#00ff00';
+                ctx.beginPath();
+                ctx.arc(m.x, m.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Explosions
+            for (let e of explosions) {
+                const gradient = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, e.radius);
+                gradient.addColorStop(0, e.isPlayer ? 'rgba(255, 255, 255, 1)' : 'rgba(255, 100, 0, 1)');
+                gradient.addColorStop(0.5, e.isPlayer ? 'rgba(0, 255, 255, 0.8)' : 'rgba(255, 50, 0, 0.8)');
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        function gameLoop() {
+            update();
+            draw();
+            if (!gameOver) {
+                animationId = requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        function startGame() {
+            score = 0;
+            wave = 1;
+            ammo = 30;
+            gameOver = false;
+            paused = false;
+            enemyMissiles = [];
+            playerMissiles = [];
+            explosions = [];
+            
+            document.getElementById('score').textContent = '0';
+            document.getElementById('wave').textContent = '1';
+            document.getElementById('ammo').textContent = '30';
+            
+            initCities();
+            updateCitiesDisplay();
+            
+            document.getElementById('start-overlay').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.add('hidden');
+            document.getElementById('wave-overlay').classList.add('hidden');
+            gameStarted = true;
+            
+            setTimeout(() => spawnWave(), 1000);
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function togglePause() {
+            if (!gameStarted || gameOver) return;
+            paused = !paused;
+            document.getElementById('pause-overlay').classList.toggle('hidden', !paused);
+            if (!paused) animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function endGame() {
+            gameOver = true;
+            if (animationId) cancelAnimationFrame(animationId);
+            
+            document.getElementById('final-score').textContent = score;
+            
+            const highScoreSection = document.getElementById('high-score-section');
+            highScoreSection.innerHTML = '';
+            
+            if (isHighScore(GAME_NAME, score)) {
+                const savedInitials = localStorage.getItem('retroArcade_playerInitials') || 'AAA';
+                
+                highScoreSection.innerHTML = `
+                    <p style="font-family: var(--font-pixel); font-size: 14px; color: var(--neon-green); margin: 20px 0 10px;">NEW HIGH SCORE!</p>
+                    <p style="font-family: var(--font-pixel); font-size: 10px; color: var(--neon-cyan); margin-bottom: 15px;">ENTER INITIALS:</p>
+                    <div style="display: flex; gap: 10px; justify: center; margin-bottom: 15px;">
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[0]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[1]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[2]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                    </div>
+                    <button id="save-score-btn" style="font-family: var(--font-pixel); font-size: 10px; padding: 10px 20px; background: var(--neon-green); border: none; color: #000; cursor: pointer;">SAVE SCORE</button>
+                `;
+                
+                const inputs = highScoreSection.querySelectorAll('.hs-input');
+                
+                // Auto-select content when focused
+                inputs.forEach((input, index) => {
+                    input.addEventListener('focus', () => input.select());
+                    input.addEventListener('input', (e) => {
+                        e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                        if (e.target.value && index < 2) {
+                            inputs[index + 1].focus();
+                        }
+                    });
+                });
+                
+                // Delayed focus to ensure DOM is ready
+                setTimeout(() => {
+                    inputs[0].focus();
+                }, 100);
+                
+                document.getElementById('save-score-btn').addEventListener('click', () => {
+                    const name = Array.from(inputs).map(i => i.value || ' ').join('');
+                    addHighScore(GAME_NAME, name, score);
+                    const entry = getTopScoreEntry(GAME_NAME);
+                    document.getElementById('high-score').textContent = entry ? `${entry.name} ${entry.score}` : '0';
+                    highScoreSection.innerHTML = '<p style="color: var(--neon-green); margin-top: 20px; font-family: var(--font-pixel); font-size: 12px;">SCORE SAVED!</p>';
+                });
+            }
+            
+            document.getElementById('gameover-overlay').classList.remove('hidden');
+        }
+        
+        // Controls
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+        
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+        
+        canvas.addEventListener('click', (e) => {
+            if (!gameStarted || gameOver || paused) return;
+            const rect = canvas.getBoundingClientRect();
+            firePlayerMissile(e.clientX - rect.left, e.clientY - rect.top);
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'p' || e.key === 'P') {
+                togglePause();
+            }
+        });
+        
+        // Init
+        const entry = getTopScoreEntry(GAME_NAME);
+        document.getElementById('high-score').textContent = entry ? `${entry.name} ${entry.score}` : '0';
+        initCities();
+        updateCitiesDisplay();
+    </script>
+</body>
+</html>

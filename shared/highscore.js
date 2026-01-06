@@ -139,6 +139,9 @@ export async function addHighScore(gameName, playerName, score) {
     score: score,
   };
 
+  // Save initials for auto-fill
+  localStorage.setItem("retroArcade_playerInitials", entry.name);
+
   try {
     const response = await fetch(`${API_BASE}/${gameName}`, {
       method: "POST",

@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRON - Retro Arcade</title>
+    <link rel="stylesheet" href="../shared/arcade-theme.css">
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <style>
+        .game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .game-title {
+            font-family: var(--font-pixel);
+            font-size: 32px;
+            color: var(--neon-cyan);
+            text-shadow: var(--glow-cyan);
+            margin-bottom: 20px;
+            letter-spacing: 4px;
+        }
+
+        .game-layout {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 120px;
+        }
+
+        .panel-box {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid var(--neon-cyan);
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .panel-label {
+            font-family: var(--font-pixel);
+            font-size: 10px;
+            color: var(--neon-cyan);
+            margin-bottom: 10px;
+        }
+
+        .panel-value {
+            font-family: var(--font-pixel);
+            font-size: 16px;
+            color: var(--neon-yellow);
+            text-shadow: 0 0 10px var(--neon-yellow);
+        }
+
+        .lives-container {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .life-icon { font-size: 14px; }
+
+        .game-canvas-container {
+            position: relative;
+        }
+
+        #game-canvas {
+            display: block;
+            background: #000;
+            border: 4px solid var(--neon-purple);
+            box-shadow: 0 0 20px var(--neon-purple), inset 0 0 30px rgba(170, 0, 255, 0.1);
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .overlay.hidden { display: none; }
+
+        .overlay h2 {
+            font-family: var(--font-pixel);
+            font-size: 24px;
+            color: var(--neon-pink);
+            text-shadow: var(--glow-pink);
+            margin-bottom: 20px;
+        }
+
+        .overlay p {
+            font-family: var(--font-pixel);
+            font-size: 12px;
+            color: var(--neon-cyan);
+            margin: 10px 0;
+        }
+
+        .start-btn {
+            font-family: var(--font-pixel);
+            font-size: 14px;
+            padding: 15px 30px;
+            margin-top: 20px;
+            background: linear-gradient(180deg, #333, #111);
+            border: 3px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .start-btn:hover {
+            background: var(--neon-cyan);
+            color: #000;
+            box-shadow: 0 0 30px var(--neon-cyan);
+        }
+
+        .controls-info {
+            margin-top: 30px;
+            font-family: var(--font-pixel);
+            font-size: 8px;
+            color: #666;
+            text-align: center;
+            line-height: 2;
+        }
+
+        .controls-info span { color: var(--neon-cyan); }
+
+        @media (max-width: 700px) {
+            .game-layout { flex-direction: column; align-items: center; }
+            .side-panel { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div class="grid-bg"></div>
+    <a href="../index.html" class="back-btn">◀ ARCADE</a>
+
+    <div class="game-wrapper">
+        <h1 class="game-title">TRON</h1>
+
+        <div class="game-layout">
+            <div class="side-panel">
+                <div class="panel-box">
+                    <div class="panel-label">TIME</div>
+                    <div class="panel-value" id="timer">0:00</div>
+                </div>
+                <div class="panel-box">
+                    <div class="panel-label">LIVES</div>
+                    <div class="lives-container" id="lives-display"></div>
+                </div>
+                <div class="panel-box">
+                    <div class="panel-label">TOTAL</div>
+                    <div class="panel-value" id="total-time">0:00</div>
+                </div>
+                <div class="panel-box">
+                    <div class="panel-label">HIGH</div>
+                    <div class="panel-value" id="high-score">0:00</div>
+                </div>
+            </div>
+
+            <div class="game-canvas-container">
+                <canvas id="game-canvas" width="600" height="400"></canvas>
+                
+                <div class="overlay" id="start-overlay">
+                    <h2>TRON</h2>
+                    <p>SURVIVE AS LONG AS YOU CAN</p>
+                    <p style="font-size: 10px; color: #888;">5 LIVES - TOTAL TIME IS YOUR SCORE</p>
+                    <button class="start-btn" id="start-btn">START GAME</button>
+                    <div class="controls-info">
+                        <span>↑↓←→</span> or <span>WASD</span> TURN<br>
+                        <span>P</span> PAUSE
+                    </div>
+                </div>
+
+                <div class="overlay hidden" id="pause-overlay">
+                    <h2>PAUSED</h2>
+                    <p>PRESS P TO CONTINUE</p>
+                </div>
+
+                <div class="overlay hidden" id="crash-overlay">
+                    <h2 id="crash-text">CRASHED!</h2>
+                    <p>SURVIVED: <span id="round-time">0:00</span></p>
+                    <p>NEXT ROUND IN <span id="countdown">3</span></p>
+                </div>
+
+                <div class="overlay hidden" id="gameover-overlay">
+                    <h2>GAME OVER</h2>
+                    <p>TOTAL TIME: <span id="final-time">0:00</span></p>
+                    <div id="high-score-section"></div>
+                    <button class="start-btn" id="restart-btn">PLAY AGAIN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { getTopScore, isHighScore, addHighScore, getTopScoreEntry } from '../shared/highscore.js';
+
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const GAME_NAME = 'tron';
+        
+        const CELL_SIZE = 4;
+        const GRID_W = canvas.width / CELL_SIZE;
+        const GRID_H = canvas.height / CELL_SIZE;
+        
+        let lives = 5;
+        let gameStarted = false;
+        let paused = false;
+        let gameOver = false;
+        let roundOver = false;
+        let animationId;
+        
+        // Time tracking
+        let roundStartTime = 0;
+        let currentRoundTime = 0;
+        let totalTime = 0;
+        
+        let player, cpu;
+        let grid = [];
+        
+        const PLAYER_COLOR = '#00ffff';
+        const CPU_COLOR = '#ff6600';
+        
+        function initGrid() {
+            grid = [];
+            for (let i = 0; i < GRID_W * GRID_H; i++) {
+                grid[i] = 0;
+            }
+        }
+        
+        function initPlayers() {
+            player = {
+                x: Math.floor(GRID_W * 0.25),
+                y: Math.floor(GRID_H / 2),
+                dx: 1,
+                dy: 0,
+                trail: [],
+                alive: true
+            };
+            
+            cpu = {
+                x: Math.floor(GRID_W * 0.75),
+                y: Math.floor(GRID_H / 2),
+                dx: -1,
+                dy: 0,
+                trail: [],
+                alive: true
+            };
+        }
+        
+        function getGridIndex(x, y) {
+            return y * GRID_W + x;
+        }
+        
+        function isCollision(x, y) {
+            if (x < 0 || x >= GRID_W || y < 0 || y >= GRID_H) return true;
+            return grid[getGridIndex(x, y)] !== 0;
+        }
+        
+        function countOpenSpace(startX, startY, dx, dy, maxDepth) {
+            let count = 0;
+            let x = startX;
+            let y = startY;
+            for (let i = 0; i < maxDepth; i++) {
+                x += dx;
+                y += dy;
+                if (isCollision(x, y)) break;
+                count++;
+            }
+            return count;
+        }
+        
+        function updateAI() {
+            // Smarter AI: look ahead and avoid trapping self
+            const directions = [
+                { dx: 0, dy: -1, name: 'up' },
+                { dx: 0, dy: 1, name: 'down' },
+                { dx: -1, dy: 0, name: 'left' },
+                { dx: 1, dy: 0, name: 'right' }
+            ];
+            
+            // Can't go backwards
+            const validDirs = directions.filter(d => 
+                !(d.dx === -cpu.dx && d.dy === -cpu.dy)
+            );
+            
+            let bestDir = { dx: cpu.dx, dy: cpu.dy };
+            let bestScore = -Infinity;
+            
+            for (let dir of validDirs) {
+                const nextX = cpu.x + dir.dx;
+                const nextY = cpu.y + dir.dy;
+                
+                // Skip if immediate collision
+                if (isCollision(nextX, nextY)) continue;
+                
+                // Count open space in multiple directions from new position
+                let score = 0;
+                
+                // Look straight ahead
+                score += countOpenSpace(nextX, nextY, dir.dx, dir.dy, 30) * 2;
+                
+                // Look left and right relative to direction
+                if (dir.dx !== 0) {
+                    score += countOpenSpace(nextX, nextY, 0, 1, 15);
+                    score += countOpenSpace(nextX, nextY, 0, -1, 15);
+                } else {
+                    score += countOpenSpace(nextX, nextY, 1, 0, 15);
+                    score += countOpenSpace(nextX, nextY, -1, 0, 15);
+                }
+                
+                // Prefer center slightly
+                const centerX = GRID_W / 2;
+                const centerY = GRID_H / 2;
+                const distToCenter = Math.abs(nextX - centerX) + Math.abs(nextY - centerY);
+                score -= distToCenter * 0.1;
+                
+                // Add randomness to make AI less predictable
+                score += Math.random() * 5;
+                
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestDir = dir;
+                }
+            }
+            
+            // Only change if we found a valid direction
+            if (bestScore > -Infinity) {
+                cpu.dx = bestDir.dx;
+                cpu.dy = bestDir.dy;
+            }
+        }
+        
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function updateLivesDisplay() {
+            const el = document.getElementById('lives-display');
+            el.innerHTML = '';
+            for (let i = 0; i < lives; i++) {
+                const icon = document.createElement('span');
+                icon.className = 'life-icon';
+                icon.textContent = '🏍️';
+                el.appendChild(icon);
+            }
+        }
+        
+        function update() {
+            if (!gameStarted || gameOver || paused || roundOver) return;
+            
+            // Update timer
+            currentRoundTime = (performance.now() - roundStartTime) / 1000;
+            document.getElementById('timer').textContent = formatTime(currentRoundTime);
+            document.getElementById('total-time').textContent = formatTime(totalTime + currentRoundTime);
+            
+            // AI decision every few frames
+            if (Math.random() < 0.2) updateAI();
+            
+            // Move player
+            player.x += player.dx;
+            player.y += player.dy;
+            
+            // Move CPU
+            cpu.x += cpu.dx;
+            cpu.y += cpu.dy;
+            
+            // Check collisions
+            const playerHit = isCollision(player.x, player.y);
+            const cpuHit = isCollision(cpu.x, cpu.y);
+            
+            if (playerHit) {
+                // Player crashed - lose a life
+                totalTime += currentRoundTime;
+                endRound(false);
+            } else if (cpuHit) {
+                // CPU crashed - player wins round, time counts, no life lost
+                totalTime += currentRoundTime;
+                endRound(true);
+            }
+            
+            // Place trails if alive
+            if (player.alive && !playerHit) {
+                grid[getGridIndex(player.x, player.y)] = 1;
+                player.trail.push({ x: player.x, y: player.y });
+            }
+            if (cpu.alive && !cpuHit) {
+                grid[getGridIndex(cpu.x, cpu.y)] = 2;
+                cpu.trail.push({ x: cpu.x, y: cpu.y });
+            }
+        }
+        
+        function endRound(playerWon = false) {
+            roundOver = true;
+            document.getElementById('round-time').textContent = formatTime(currentRoundTime);
+            
+            if (playerWon) {
+                document.getElementById('crash-text').textContent = 'YOU WIN!';
+            } else {
+                document.getElementById('crash-text').textContent = 'CRASHED!';
+                lives--;
+                updateLivesDisplay();
+            }
+            
+            document.getElementById('crash-overlay').classList.remove('hidden');
+            
+            if (lives <= 0) {
+                setTimeout(() => {
+                    document.getElementById('crash-overlay').classList.add('hidden');
+                    endGame();
+                }, 1500);
+                return;
+            }
+            
+            // Countdown to next round
+            let count = 3;
+            document.getElementById('countdown').textContent = count;
+            const countdownInterval = setInterval(() => {
+                count--;
+                document.getElementById('countdown').textContent = count;
+                if (count <= 0) {
+                    clearInterval(countdownInterval);
+                    document.getElementById('crash-overlay').classList.add('hidden');
+                    startRound();
+                }
+            }, 1000);
+        }
+        
+        function startRound() {
+            roundOver = false;
+            currentRoundTime = 0;
+            roundStartTime = performance.now();
+            initGrid();
+            initPlayers();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function draw() {
+            // Background with grid
+            ctx.fillStyle = '#0a0a15';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Grid lines
+            ctx.strokeStyle = '#1a1a2e';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 20) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 20) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            
+            if (!gameStarted) return;
+            
+            // Draw trails
+            ctx.shadowBlur = 5;
+            
+            // Player trail
+            ctx.fillStyle = PLAYER_COLOR;
+            ctx.shadowColor = PLAYER_COLOR;
+            for (let pos of player.trail) {
+                ctx.fillRect(pos.x * CELL_SIZE, pos.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+            }
+            
+            // CPU trail
+            ctx.fillStyle = CPU_COLOR;
+            ctx.shadowColor = CPU_COLOR;
+            for (let pos of cpu.trail) {
+                ctx.fillRect(pos.x * CELL_SIZE, pos.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+            }
+            
+            // Draw heads
+            ctx.shadowBlur = 15;
+            
+            if (player.alive) {
+                ctx.fillStyle = '#fff';
+                ctx.shadowColor = PLAYER_COLOR;
+                ctx.fillRect(player.x * CELL_SIZE - 2, player.y * CELL_SIZE - 2, CELL_SIZE + 4, CELL_SIZE + 4);
+            }
+            
+            if (cpu.alive) {
+                ctx.fillStyle = '#fff';
+                ctx.shadowColor = CPU_COLOR;
+                ctx.fillRect(cpu.x * CELL_SIZE - 2, cpu.y * CELL_SIZE - 2, CELL_SIZE + 4, CELL_SIZE + 4);
+            }
+            
+            ctx.shadowBlur = 0;
+        }
+        
+        let lastUpdate = 0;
+        const UPDATE_INTERVAL = 40; // ms between updates (slower = easier)
+        
+        function gameLoop(time) {
+            if (time - lastUpdate >= UPDATE_INTERVAL) {
+                update();
+                lastUpdate = time;
+            }
+            draw();
+            if (!gameOver && !roundOver) {
+                animationId = requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        function startGame() {
+            lives = 5;
+            totalTime = 0;
+            gameOver = false;
+            paused = false;
+            roundOver = false;
+            
+            document.getElementById('total-time').textContent = '0:00';
+            updateLivesDisplay();
+            
+            document.getElementById('start-overlay').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.add('hidden');
+            document.getElementById('crash-overlay').classList.add('hidden');
+            gameStarted = true;
+            
+            startRound();
+        }
+        
+        function togglePause() {
+            if (!gameStarted || gameOver || roundOver) return;
+            paused = !paused;
+            document.getElementById('pause-overlay').classList.toggle('hidden', !paused);
+            if (!paused) {
+                // Adjust start time to account for pause
+                roundStartTime = performance.now() - (currentRoundTime * 1000);
+                lastUpdate = performance.now();
+                animationId = requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        function timeToScore(seconds) {
+            // Convert time to score (seconds * 10)
+            return Math.floor(seconds * 10);
+        }
+        
+        function endGame() {
+            gameOver = true;
+            if (animationId) cancelAnimationFrame(animationId);
+            
+            const finalTime = totalTime;
+            const score = timeToScore(finalTime);
+            document.getElementById('final-time').textContent = formatTime(finalTime);
+            
+            const highScoreSection = document.getElementById('high-score-section');
+            highScoreSection.innerHTML = '';
+            
+            if (isHighScore(GAME_NAME, score)) {
+                const savedInitials = localStorage.getItem('retroArcade_playerInitials') || 'AAA';
+                
+                highScoreSection.innerHTML = `
+                    <p style="font-family: var(--font-pixel); font-size: 14px; color: var(--neon-green); margin: 20px 0 10px;">NEW HIGH SCORE!</p>
+                    <p style="font-family: var(--font-pixel); font-size: 10px; color: var(--neon-cyan); margin-bottom: 15px;">ENTER INITIALS:</p>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[0]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[1]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[2]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                    </div>
+                    <button id="save-score-btn" style="font-family: var(--font-pixel); font-size: 10px; padding: 10px 20px; background: var(--neon-green); border: none; color: #000; cursor: pointer;">SAVE SCORE</button>
+                `;
+                
+                const inputs = highScoreSection.querySelectorAll('.hs-input');
+                
+                // Auto-select content when focused
+                inputs.forEach((input, index) => {
+                    input.addEventListener('focus', () => input.select());
+                    input.addEventListener('input', (e) => {
+                        e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                        if (e.target.value && index < 2) {
+                            inputs[index + 1].focus();
+                        }
+                    });
+                });
+                
+                // Delayed focus to ensure DOM is ready
+                setTimeout(() => {
+                    inputs[0].focus();
+                }, 100);
+                
+                document.getElementById('save-score-btn').addEventListener('click', () => {
+                    const name = Array.from(inputs).map(i => i.value || ' ').join('');
+                    addHighScore(GAME_NAME, name, score);
+                    updateHighScoreDisplay();
+                    highScoreSection.innerHTML = '<p style="color: var(--neon-green); margin-top: 20px; font-family: var(--font-pixel); font-size: 12px;">SCORE SAVED!</p>';
+                });
+            }
+            
+            document.getElementById('gameover-overlay').classList.remove('hidden');
+        }
+        
+        function updateHighScoreDisplay() {
+            const entry = getTopScoreEntry(GAME_NAME);
+            if (entry) {
+                const seconds = entry.score / 10;
+                document.getElementById('high-score').textContent = `${entry.name} ${formatTime(seconds)}`;
+            } else {
+                document.getElementById('high-score').textContent = '0:00';
+            }
+        }
+        
+        // Controls
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'p' || e.key === 'P') {
+                togglePause();
+                return;
+            }
+            
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+            }
+            
+            if (!gameStarted || gameOver || paused || roundOver) return;
+            
+            switch(e.key) {
+                case 'ArrowUp': case 'w': case 'W':
+                    if (player.dy !== 1) { player.dx = 0; player.dy = -1; }
+                    break;
+                case 'ArrowDown': case 's': case 'S':
+                    if (player.dy !== -1) { player.dx = 0; player.dy = 1; }
+                    break;
+                case 'ArrowLeft': case 'a': case 'A':
+                    if (player.dx !== 1) { player.dx = -1; player.dy = 0; }
+                    break;
+                case 'ArrowRight': case 'd': case 'D':
+                    if (player.dx !== -1) { player.dx = 1; player.dy = 0; }
+                    break;
+            }
+        });
+        
+        // Init
+        updateHighScoreDisplay();
+        updateLivesDisplay();
+    </script>
+</body>
+</html>

@@ -49,6 +49,12 @@
             font-size: 32px;
         }
 
+        .rally-display {
+            color: var(--neon-yellow);
+            font-size: 14px;
+            font-weight: bold;
+        }
+
         .high-score-display {
             font-size: 12px;
             color: var(--neon-yellow);
@@ -192,7 +198,10 @@
 
         <div class="game-hud">
             <span class="player-score" id="player-score">0</span>
-            <span class="vs-text">VS</span>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <span class="vs-text">VS</span>
+                <span class="rally-display">RALLY: <span id="rally-count">0</span></span>
+            </div>
             <span class="ai-score" id="ai-score">0</span>
         </div>
         <div class="high-score-display">HIGH SCORE: <span id="high-score">0</span></div>
@@ -202,7 +211,8 @@
 
             <div class="overlay" id="start-overlay">
                 <h2>PONG</h2>
-                <p>FIRST TO 11 WINS!</p>
+                <p>FIRST TO 5 WINS!</p>
+                <p style="color: var(--neon-yellow); font-size: 10px;">HIGH SCORE = LONGEST RALLY</p>
                 
                 <div class="mode-select">
                     <button class="mode-btn selected" id="mode-ai">VS AI</button>
@@ -252,7 +262,7 @@
         const PADDLE_WIDTH = 15;
         const PADDLE_HEIGHT = 80;
         const BALL_SIZE = 12;
-        const WINNING_SCORE = 11;
+        const WINNING_SCORE = 5;
 
         // Game state
         let player1 = { y: 0, score: 0 };
@@ -265,6 +275,8 @@
         let gameStarted = false;
         let serving = true;
         let lastScorer = 1;
+        let rallyCount = 0;
+        let maxRally = 0;
         let keys = {};
         let animationId = null;
         let frameCount = 0;
@@ -279,6 +291,7 @@
         // DOM elements
         const playerScoreEl = document.getElementById('player-score');
         const aiScoreEl = document.getElementById('ai-score');
+        const rallyCountEl = document.getElementById('rally-count');
         const highScoreEl = document.getElementById('high-score');
         const startOverlay = document.getElementById('start-overlay');
         const pauseOverlay = document.getElementById('pause-overlay');
@@ -325,7 +338,11 @@
         function resetBall() {
             ball.x = canvas.width / 2 - BALL_SIZE / 2;
             ball.y = canvas.height / 2 - BALL_SIZE / 2;
+            ball.x = canvas.width / 2 - BALL_SIZE / 2;
+            ball.y = canvas.height / 2 - BALL_SIZE / 2;
             ball.speed = 5 + Math.min(player1.score + player2.score, 10) * 0.3;
+            rallyCount = 0;
+            updateRallyDisplay();
             
             // Serve towards last scorer
             const angle = (Math.random() - 0.5) * Math.PI / 3;
@@ -449,6 +466,10 @@
                 ball.dx = Math.cos(angle) * ball.speed;
                 ball.dy = Math.sin(angle) * ball.speed;
                 ball.x = 30 + PADDLE_WIDTH;
+                
+                rallyCount++;
+                if (rallyCount > maxRally) maxRally = rallyCount;
+                updateRallyDisplay();
             }
             
             // Player 2 paddle (right)
@@ -463,6 +484,10 @@
                 ball.dx = -Math.cos(angle) * ball.speed;
                 ball.dy = Math.sin(angle) * ball.speed;
                 ball.x = canvas.width - 30 - PADDLE_WIDTH - BALL_SIZE;
+                
+                rallyCount++;
+                if (rallyCount > maxRally) maxRally = rallyCount;
+                updateRallyDisplay();
             }
             
             // Scoring
@@ -518,6 +543,10 @@
         function updateScoreDisplay() {
             playerScoreEl.textContent = player1.score;
             aiScoreEl.textContent = player2.score;
+        }
+
+        function updateRallyDisplay() {
+            rallyCountEl.textContent = rallyCount;
         }
 
         function draw() {
@@ -581,40 +610,46 @@
             document.getElementById('winner-text').textContent = `${winner} WINS!`;
             document.getElementById('final-score').textContent = `${winnerScore} - ${loserScore}`;
             
-            // Only track high score for AI games (player wins)
-            const score = player1.score >= WINNING_SCORE ? player1.score * 100 + (WINNING_SCORE - player2.score) * 10 : 0;
+            // High score based on Longest Rally
+            const score = maxRally;
             
             const highScoreSection = document.getElementById('high-score-section');
             highScoreSection.innerHTML = '';
             
-            if (gameMode === 'ai' && player1.score >= WINNING_SCORE && isHighScore(GAME_NAME, score)) {
+            if (isHighScore(GAME_NAME, score)) {
+                const savedInitials = localStorage.getItem('retroArcade_playerInitials') || 'AAA';
+
                 highScoreSection.innerHTML = `
-                    <p style="font-family: var(--font-pixel); font-size: 14px; color: var(--neon-green); margin: 20px 0 10px;">NEW HIGH SCORE!</p>
+                    <p style="font-family: var(--font-pixel); font-size: 14px; color: var(--neon-green); margin: 20px 0 10px;">NEW RALLY RECORD!</p>
                     <p style="font-family: var(--font-pixel); font-size: 10px; color: var(--neon-cyan); margin-bottom: 15px;">ENTER INITIALS:</p>
                     <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
-                        <input type="text" class="hs-input" maxlength="1" value="A" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
-                        <input type="text" class="hs-input" maxlength="1" value="A" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
-                        <input type="text" class="hs-input" maxlength="1" value="A" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[0]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[1]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[2]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
                     </div>
                     <button id="save-score-btn" style="font-family: var(--font-pixel); font-size: 10px; padding: 10px 20px; background: var(--neon-green); border: none; color: #000; cursor: pointer;">SAVE SCORE</button>
                 `;
                 
                 const inputs = highScoreSection.querySelectorAll('.hs-input');
-                inputs[0].focus();
-                inputs[0].select();
                 
+                // Auto-select content when focused
                 inputs.forEach((input, index) => {
+                    input.addEventListener('focus', () => input.select());
                     input.addEventListener('input', (e) => {
                         e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
                         if (e.target.value && index < 2) {
                             inputs[index + 1].focus();
-                            inputs[index + 1].select();
                         }
                     });
                 });
                 
+                // Delayed focus to ensure DOM is ready
+                setTimeout(() => {
+                    inputs[0].focus();
+                }, 100);
+                
                 document.getElementById('save-score-btn').addEventListener('click', () => {
-                    const name = Array.from(inputs).map(i => i.value || 'A').join('');
+                    const name = Array.from(inputs).map(i => i.value || ' ').join('');
                     addHighScore(GAME_NAME, name, score);
                     highScoreEl.textContent = getTopScore(GAME_NAME).toLocaleString();
                     highScoreSection.innerHTML = '<p style="color: var(--neon-green); margin-top: 20px; font-family: var(--font-pixel); font-size: 12px;">SCORE SAVED!</p>';

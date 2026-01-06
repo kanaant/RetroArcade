@@ -40,8 +40,10 @@
         }
 
         .score-display {
-            color: var(--neon-yellow);
-            text-shadow: 0 0 10px var(--neon-yellow);
+            color: #ffffff;
+            text-shadow: 0 0 10px #ffffff;
+            font-size: 18px;
+            font-weight: bold;
         }
 
         .high-score-display {
@@ -555,7 +557,8 @@
                     const newY = ghost.y + d.y;
                     // Don't reverse direction unless necessary
                     if (d.x === -ghost.dir.x && d.y === -ghost.dir.y) return false;
-                    return canMove(newX, newY) && maze[newY]?.[newX] !== 4;
+                    // Allow ghosts to move through tiles that aren't walls (including ghost house '4')
+                    return canMove(newX, newY);
                 });
 
                 if (possibleDirs.length === 0) {
@@ -565,7 +568,11 @@
                 }
 
                 let target;
-                if (ghost.eaten) {
+                // If in ghost house (value 4), force target to exit (top center) to prevent getting stuck
+                // But NOT if eaten (returning home)
+                if (maze[ghost.y][ghost.x] === 4 && !ghost.eaten) {
+                     target = { x: 14, y: 11 };
+                } else if (ghost.eaten) {
                     // Return to ghost house
                     target = { x: 14, y: 14 };
                     if (ghost.x === 14 && ghost.y === 14) {
@@ -602,14 +609,20 @@
 
                 // Choose direction closest to target
                 let bestDir = possibleDirs[0];
-                let bestDist = Infinity;
-                possibleDirs.forEach(d => {
-                    const dist = getDistance(ghost.x + d.x, ghost.y + d.y, target.x, target.y);
-                    if (dist < bestDist) {
-                        bestDist = dist;
-                        bestDir = d;
-                    }
-                });
+                
+                // Add 10% randomness to prevent sticking in loops (unless eaten/scared)
+                if (!ghost.eaten && !ghost.scared && possibleDirs.length > 1 && Math.random() < 0.1) {
+                    bestDir = possibleDirs[Math.floor(Math.random() * possibleDirs.length)];
+                } else {
+                    let bestDist = Infinity;
+                    possibleDirs.forEach(d => {
+                        const dist = getDistance(ghost.x + d.x, ghost.y + d.y, target.x, target.y);
+                        if (dist < bestDist) {
+                            bestDist = dist;
+                            bestDir = d;
+                        }
+                    });
+                }
 
                 ghost.dir = bestDir;
                 ghost.x += ghost.dir.x;
@@ -685,10 +698,10 @@
 
             drawMaze();
             
-            if (frameCount % 16 === 0) {
+            if (frameCount % 20 === 0) {
                 movePacman();
             }
-            if (frameCount % 14 === 0) {
+            if (frameCount % 18 === 0) {
                 moveGhosts();
             }
             checkCollisions();
@@ -751,33 +764,39 @@
             highScoreSection.innerHTML = '';
             
             if (isHighScore(GAME_NAME, score)) {
+                const savedInitials = localStorage.getItem('retroArcade_playerInitials') || 'AAA';
+                
                 highScoreSection.innerHTML = `
                     <p style="font-family: var(--font-pixel); font-size: 14px; color: var(--neon-green); margin: 20px 0 10px;">NEW HIGH SCORE!</p>
                     <p style="font-family: var(--font-pixel); font-size: 10px; color: var(--neon-cyan); margin-bottom: 15px;">ENTER INITIALS:</p>
                     <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
-                        <input type="text" class="hs-input" maxlength="1" value="A" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
-                        <input type="text" class="hs-input" maxlength="1" value="A" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
-                        <input type="text" class="hs-input" maxlength="1" value="A" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[0]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[1]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[2]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
                     </div>
                     <button id="save-score-btn" style="font-family: var(--font-pixel); font-size: 10px; padding: 10px 20px; background: var(--neon-green); border: none; color: #000; cursor: pointer;">SAVE SCORE</button>
                 `;
                 
                 const inputs = highScoreSection.querySelectorAll('.hs-input');
-                inputs[0].focus();
-                inputs[0].select();
                 
+                // Auto-select content when focused
                 inputs.forEach((input, index) => {
+                    input.addEventListener('focus', () => input.select());
                     input.addEventListener('input', (e) => {
                         e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
                         if (e.target.value && index < 2) {
                             inputs[index + 1].focus();
-                            inputs[index + 1].select();
                         }
                     });
                 });
                 
+                // Delayed focus to ensure DOM is ready
+                setTimeout(() => {
+                    inputs[0].focus();
+                }, 100);
+                
                 document.getElementById('save-score-btn').addEventListener('click', () => {
-                    const name = Array.from(inputs).map(i => i.value || 'A').join('');
+                    const name = Array.from(inputs).map(i => i.value || ' ').join('');
                     addHighScore(GAME_NAME, name, score);
                     highScoreEl.textContent = getTopScore(GAME_NAME).toLocaleString();
                     highScoreSection.innerHTML = '<p style="color: var(--neon-green); margin-top: 20px; font-family: var(--font-pixel); font-size: 12px;">SCORE SAVED!</p>';

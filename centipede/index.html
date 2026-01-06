@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CENTIPEDE - Retro Arcade</title>
+    <link rel="stylesheet" href="../shared/arcade-theme.css">
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <style>
+        .game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .game-title {
+            font-family: var(--font-pixel);
+            font-size: 32px;
+            color: var(--neon-orange);
+            text-shadow: 0 0 10px var(--neon-orange), 0 0 20px var(--neon-orange);
+            margin-bottom: 20px;
+            letter-spacing: 4px;
+        }
+
+        .game-layout {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 120px;
+        }
+
+        .panel-box {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid var(--neon-orange);
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 0 10px var(--neon-orange);
+        }
+
+        .panel-label {
+            font-family: var(--font-pixel);
+            font-size: 10px;
+            color: var(--neon-orange);
+            margin-bottom: 10px;
+        }
+
+        .panel-value {
+            font-family: var(--font-pixel);
+            font-size: 16px;
+            color: var(--neon-yellow);
+            text-shadow: 0 0 10px var(--neon-yellow);
+        }
+
+        .lives-container {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .life-icon { font-size: 14px; }
+
+        .game-canvas-container {
+            position: relative;
+        }
+
+        #game-canvas {
+            display: block;
+            background: #000;
+            border: 4px solid var(--neon-orange);
+            box-shadow: 0 0 20px var(--neon-orange), inset 0 0 30px rgba(255, 136, 0, 0.1);
+            cursor: crosshair;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .overlay.hidden { display: none; }
+
+        .overlay h2 {
+            font-family: var(--font-pixel);
+            font-size: 24px;
+            color: var(--neon-pink);
+            text-shadow: var(--glow-pink);
+            margin-bottom: 20px;
+        }
+
+        .overlay p {
+            font-family: var(--font-pixel);
+            font-size: 12px;
+            color: var(--neon-cyan);
+            margin: 10px 0;
+        }
+
+        .start-btn {
+            font-family: var(--font-pixel);
+            font-size: 14px;
+            padding: 15px 30px;
+            margin-top: 20px;
+            background: linear-gradient(180deg, #333, #111);
+            border: 3px solid var(--neon-orange);
+            color: var(--neon-orange);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .start-btn:hover {
+            background: var(--neon-orange);
+            color: #000;
+            box-shadow: 0 0 30px var(--neon-orange);
+        }
+
+        .controls-info {
+            margin-top: 30px;
+            font-family: var(--font-pixel);
+            font-size: 8px;
+            color: #666;
+            text-align: center;
+            line-height: 2;
+        }
+
+        .controls-info span { color: var(--neon-orange); }
+
+        @media (max-width: 700px) {
+            .game-layout { flex-direction: column; align-items: center; }
+            .side-panel { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div class="grid-bg"></div>
+    <a href="../index.html" class="back-btn">◀ ARCADE</a>
+
+    <div class="game-wrapper">
+        <h1 class="game-title">CENTIPEDE</h1>
+
+        <div class="game-layout">
+            <div class="side-panel">
+                <div class="panel-box">
+                    <div class="panel-label">SCORE</div>
+                    <div class="panel-value" id="score">0</div>
+                </div>
+                <div class="panel-box">
+                    <div class="panel-label">LEVEL</div>
+                    <div class="panel-value" id="level">1</div>
+                </div>
+                <div class="panel-box">
+                    <div class="panel-label">LIVES</div>
+                    <div class="lives-container" id="lives-display"></div>
+                </div>
+                <div class="panel-box">
+                    <div class="panel-label">HIGH</div>
+                    <div class="panel-value" id="high-score">0</div>
+                </div>
+            </div>
+
+            <div class="game-canvas-container">
+                <canvas id="game-canvas" width="480" height="520"></canvas>
+                
+                <div class="overlay" id="start-overlay">
+                    <h2>CENTIPEDE</h2>
+                    <p>DESTROY THE CENTIPEDE!</p>
+                    <p style="font-size: 10px; color: #888;">SHOOT ALL SEGMENTS TO WIN</p>
+                    <button class="start-btn" id="start-btn">START GAME</button>
+                    <div class="controls-info">
+                        <span>MOUSE</span> MOVE & SHOOT<br>
+                        <span>P</span> PAUSE
+                    </div>
+                </div>
+
+                <div class="overlay hidden" id="pause-overlay">
+                    <h2>PAUSED</h2>
+                    <p>PRESS P TO CONTINUE</p>
+                </div>
+
+                <div class="overlay hidden" id="gameover-overlay">
+                    <h2>GAME OVER</h2>
+                    <p>FINAL SCORE: <span id="final-score">0</span></p>
+                    <div id="high-score-section"></div>
+                    <button class="start-btn" id="restart-btn">PLAY AGAIN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { getTopScore, isHighScore, addHighScore, getTopScoreEntry } from '../shared/highscore.js';
+
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const GAME_NAME = 'centipede';
+        
+        const TILE = 20;
+        const COLS = canvas.width / TILE;
+        const ROWS = canvas.height / TILE;
+        
+        let score = 0;
+        let level = 1;
+        let lives = 3;
+        let gameStarted = false;
+        let paused = false;
+        let gameOver = false;
+        let animationId;
+        let frameCount = 0;
+        
+        // Player
+        let player = { x: canvas.width / 2, y: canvas.height - 30 };
+        let bullets = [];
+        
+        // Centipede
+        let centipede = [];
+        
+        // Mushrooms
+        let mushrooms = [];
+        
+        // Keys
+        const keys = {};
+        let mouseX = canvas.width / 2;
+        let mouseY = canvas.height - 30;
+        let autoShootInterval = null;
+        
+        function initMushrooms() {
+            mushrooms = [];
+            const count = 20 + level * 5;
+            for (let i = 0; i < count; i++) {
+                const col = Math.floor(Math.random() * COLS);
+                const row = Math.floor(Math.random() * (ROWS - 5)) + 1;
+                if (!mushrooms.find(m => m.col === col && m.row === row)) {
+                    mushrooms.push({ col, row, health: 4 });
+                }
+            }
+        }
+        
+        function initCentipede() {
+            centipede = [];
+            const length = 10 + level * 2;
+            for (let i = 0; i < length; i++) {
+                centipede.push({
+                    x: (COLS - 1 - i) * TILE,
+                    y: 0,
+                    dx: -1,
+                    isHead: i === 0
+                });
+            }
+        }
+        
+        function updateLivesDisplay() {
+            const el = document.getElementById('lives-display');
+            el.innerHTML = '';
+            for (let i = 0; i < lives; i++) {
+                const icon = document.createElement('span');
+                icon.className = 'life-icon';
+                icon.textContent = '🔫';
+                el.appendChild(icon);
+            }
+        }
+        
+        function getMushroom(col, row) {
+            return mushrooms.find(m => m.col === col && m.row === row);
+        }
+        
+        function update() {
+            if (!gameStarted || gameOver || paused) return;
+            frameCount++;
+            
+            // Player movement - follows mouse smoothly
+            const targetX = mouseX;
+            const dx = targetX - player.x;
+            player.x += dx * 0.15; // Smooth follow
+            player.x = Math.max(TILE/2, Math.min(canvas.width - TILE/2, player.x));
+            
+            // Update bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].y -= 10;
+                
+                if (bullets[i].y < 0) {
+                    bullets.splice(i, 1);
+                    continue;
+                }
+                
+                // Check mushroom collision
+                const col = Math.floor(bullets[i].x / TILE);
+                const row = Math.floor(bullets[i].y / TILE);
+                const mush = getMushroom(col, row);
+                if (mush) {
+                    mush.health--;
+                    if (mush.health <= 0) {
+                        mushrooms.splice(mushrooms.indexOf(mush), 1);
+                        score += 1;
+                    }
+                    bullets.splice(i, 1);
+                    document.getElementById('score').textContent = score;
+                    continue;
+                }
+                
+                // Check centipede collision
+                for (let j = centipede.length - 1; j >= 0; j--) {
+                    const seg = centipede[j];
+                    if (Math.abs(bullets[i].x - seg.x - TILE/2) < TILE/2 &&
+                        Math.abs(bullets[i].y - seg.y - TILE/2) < TILE/2) {
+                        
+                        // Add mushroom at segment position
+                        const mCol = Math.floor(seg.x / TILE);
+                        const mRow = Math.floor(seg.y / TILE);
+                        if (!getMushroom(mCol, mRow)) {
+                            mushrooms.push({ col: mCol, row: mRow, health: 4 });
+                        }
+                        
+                        score += seg.isHead ? 100 : 10;
+                        document.getElementById('score').textContent = score;
+                        
+                        // Split centipede
+                        if (j < centipede.length - 1) {
+                            centipede[j + 1].isHead = true;
+                        }
+                        
+                        centipede.splice(j, 1);
+                        bullets.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+            
+            // Update centipede - much slower now
+            if (frameCount % (20 - Math.min(level * 2, 15)) === 0) {
+                for (let seg of centipede) {
+                    const nextX = seg.x + seg.dx * TILE;
+                    const col = Math.floor(nextX / TILE);
+                    const row = Math.floor(seg.y / TILE);
+                    
+                    // Check if hit wall or mushroom
+                    if (nextX < 0 || nextX >= canvas.width || getMushroom(col, row)) {
+                        seg.dx *= -1;
+                        seg.y += TILE;
+                        
+                        if (seg.y >= canvas.height - TILE * 4) {
+                            seg.y = canvas.height - TILE * 4;
+                        }
+                    } else {
+                        seg.x = nextX;
+                    }
+                }
+            }
+            
+            // Check player collision
+            for (let seg of centipede) {
+                if (Math.abs(player.x - seg.x - TILE/2) < TILE &&
+                    Math.abs(player.y - seg.y - TILE/2) < TILE) {
+                    loseLife();
+                    return;
+                }
+            }
+            
+            // Check level complete
+            if (centipede.length === 0) {
+                level++;
+                document.getElementById('level').textContent = level;
+                initCentipede();
+                initMushrooms();
+            }
+        }
+        
+        function loseLife() {
+            lives--;
+            updateLivesDisplay();
+            player.x = canvas.width / 2;
+            
+            if (lives <= 0) {
+                endGame();
+            }
+        }
+        
+        function shoot() {
+            if (bullets.length < 2) {
+                bullets.push({ x: player.x, y: player.y - 10 });
+            }
+        }
+        
+        function draw() {
+            // Background
+            ctx.fillStyle = '#001100';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            if (!gameStarted) return;
+            
+            // Mushrooms
+            for (let mush of mushrooms) {
+                const x = mush.col * TILE;
+                const y = mush.row * TILE;
+                
+                ctx.fillStyle = `hsl(${120 - (4 - mush.health) * 30}, 80%, ${30 + mush.health * 10}%)`;
+                ctx.shadowBlur = 5;
+                ctx.shadowColor = '#00ff00';
+                
+                // Mushroom shape
+                ctx.beginPath();
+                ctx.ellipse(x + TILE/2, y + TILE/3, TILE/2.5, TILE/3, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillRect(x + TILE/3, y + TILE/3, TILE/3, TILE * 0.6);
+            }
+            ctx.shadowBlur = 0;
+            
+            // Centipede
+            for (let i = centipede.length - 1; i >= 0; i--) {
+                const seg = centipede[i];
+                
+                ctx.fillStyle = seg.isHead ? '#ff6600' : '#ff4400';
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = seg.isHead ? '#ff6600' : '#ff4400';
+                
+                ctx.beginPath();
+                ctx.arc(seg.x + TILE/2, seg.y + TILE/2, TILE/2 - 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Eyes on head
+                if (seg.isHead) {
+                    ctx.fillStyle = '#fff';
+                    ctx.beginPath();
+                    ctx.arc(seg.x + TILE/3, seg.y + TILE/3, 3, 0, Math.PI * 2);
+                    ctx.arc(seg.x + TILE*2/3, seg.y + TILE/3, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#000';
+                    ctx.beginPath();
+                    ctx.arc(seg.x + TILE/3 + seg.dx, seg.y + TILE/3, 1.5, 0, Math.PI * 2);
+                    ctx.arc(seg.x + TILE*2/3 + seg.dx, seg.y + TILE/3, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            ctx.shadowBlur = 0;
+            
+            // Player
+            ctx.fillStyle = '#00ffff';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00ffff';
+            
+            ctx.beginPath();
+            ctx.moveTo(player.x, player.y - 10);
+            ctx.lineTo(player.x - 10, player.y + 10);
+            ctx.lineTo(player.x + 10, player.y + 10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Bullets
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#ffffff';
+            for (let b of bullets) {
+                ctx.fillRect(b.x - 2, b.y - 5, 4, 10);
+            }
+            ctx.shadowBlur = 0;
+        }
+        
+        function gameLoop() {
+            update();
+            draw();
+            if (!gameOver) {
+                animationId = requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        function startGame() {
+            score = 0;
+            level = 1;
+            lives = 3;
+            gameOver = false;
+            paused = false;
+            frameCount = 0;
+            bullets = [];
+            
+            player.x = canvas.width / 2;
+            
+            document.getElementById('score').textContent = '0';
+            document.getElementById('level').textContent = '1';
+            updateLivesDisplay();
+            
+            initMushrooms();
+            initCentipede();
+            
+            document.getElementById('start-overlay').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.add('hidden');
+            gameStarted = true;
+            
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function togglePause() {
+            if (!gameStarted || gameOver) return;
+            paused = !paused;
+            document.getElementById('pause-overlay').classList.toggle('hidden', !paused);
+            if (!paused) animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function endGame() {
+            gameOver = true;
+            if (animationId) cancelAnimationFrame(animationId);
+            
+            document.getElementById('final-score').textContent = score;
+            
+            const highScoreSection = document.getElementById('high-score-section');
+            highScoreSection.innerHTML = '';
+            
+            if (isHighScore(GAME_NAME, score)) {
+                const savedInitials = localStorage.getItem('retroArcade_playerInitials') || 'AAA';
+                
+                highScoreSection.innerHTML = `
+                    <p style="font-family: var(--font-pixel); font-size: 14px; color: var(--neon-green); margin: 20px 0 10px;">NEW HIGH SCORE!</p>
+                    <p style="font-family: var(--font-pixel); font-size: 10px; color: var(--neon-cyan); margin-bottom: 15px;">ENTER INITIALS:</p>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[0]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[1]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[2]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                    </div>
+                    <button id="save-score-btn" style="font-family: var(--font-pixel); font-size: 10px; padding: 10px 20px; background: var(--neon-green); border: none; color: #000; cursor: pointer;">SAVE SCORE</button>
+                `;
+                
+                const inputs = highScoreSection.querySelectorAll('.hs-input');
+                
+                // Auto-select content when focused
+                inputs.forEach((input, index) => {
+                    input.addEventListener('focus', () => input.select());
+                    input.addEventListener('input', (e) => {
+                        e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                        if (e.target.value && index < 2) {
+                            inputs[index + 1].focus();
+                        }
+                    });
+                });
+                
+                // Delayed focus to ensure DOM is ready
+                setTimeout(() => {
+                    inputs[0].focus();
+                }, 100);
+                
+                document.getElementById('save-score-btn').addEventListener('click', () => {
+                    const name = Array.from(inputs).map(i => i.value || ' ').join('');
+                    addHighScore(GAME_NAME, name, score);
+                    const entry = getTopScoreEntry(GAME_NAME);
+                    document.getElementById('high-score').textContent = entry ? `${entry.name} ${entry.score}` : '0';
+                    highScoreSection.innerHTML = '<p style="color: var(--neon-green); margin-top: 20px; font-family: var(--font-pixel); font-size: 12px;">SCORE SAVED!</p>';
+                });
+            }
+            
+            document.getElementById('gameover-overlay').classList.remove('hidden');
+        }
+        
+        // Controls
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'p' || e.key === 'P') {
+                togglePause();
+                return;
+            }
+            
+            if (['ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                e.preventDefault();
+            }
+            
+            keys[e.key] = true;
+            
+            if (e.key === ' ' && gameStarted && !gameOver && !paused) {
+                shoot();
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+        
+        // Mouse controls
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+        
+        canvas.addEventListener('mousedown', (e) => {
+            if (!gameStarted || gameOver || paused) return;
+            shoot();
+            // Auto-shoot while holding
+            autoShootInterval = setInterval(() => {
+                if (gameStarted && !gameOver && !paused) shoot();
+            }, 150);
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            if (autoShootInterval) {
+                clearInterval(autoShootInterval);
+                autoShootInterval = null;
+            }
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            if (autoShootInterval) {
+                clearInterval(autoShootInterval);
+                autoShootInterval = null;
+            }
+        });
+        
+        // Init
+        const entry = getTopScoreEntry(GAME_NAME);
+        document.getElementById('high-score').textContent = entry ? `${entry.name} ${entry.score}` : '0';
+        updateLivesDisplay();
+    </script>
+</body>
+</html>

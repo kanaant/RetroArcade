@@ -243,6 +243,41 @@
         color: var(--neon-pink);
       }
 
+      .game-card.asteroids:hover {
+        border-color: #fff;
+      }
+      .game-card.asteroids .game-icon {
+        color: #fff;
+      }
+
+      .game-card.frogger:hover {
+        border-color: var(--neon-green);
+      }
+      .game-card.frogger .game-icon {
+        color: var(--neon-green);
+      }
+
+      .game-card.tron:hover {
+        border-color: var(--neon-purple);
+      }
+      .game-card.tron .game-icon {
+        color: var(--neon-purple);
+      }
+
+      .game-card.missile-command:hover {
+        border-color: #ff3366;
+      }
+      .game-card.missile-command .game-icon {
+        color: #ff3366;
+      }
+
+      .game-card.centipede:hover {
+        border-color: var(--neon-orange);
+      }
+      .game-card.centipede .game-icon {
+        color: var(--neon-orange);
+      }
+
       /* Footer */
       .arcade-footer {
         margin-top: 60px;
@@ -326,6 +361,17 @@
       </div>
 
       <div class="games-grid">
+        <a href="asteroids/index.html" class="game-card asteroids">
+          <div class="game-icon">☄️</div>
+          <h2 class="game-title">ASTEROIDS</h2>
+          <p class="game-description">
+            Blast through asteroid fields in your spaceship! Watch out for UFOs and
+            screen wrapping rocks.
+          </p>
+          <div class="game-high-score" id="asteroids-score">HIGH: ---</div>
+          <div class="play-hint">▶ PRESS TO PLAY</div>
+        </a>
+
         <a href="tetris/index.html" class="game-card tetris">
           <div class="game-icon">🎮</div>
           <h2 class="game-title">TETRIS</h2>
@@ -391,6 +437,46 @@
           <div class="game-high-score" id="pong-score">HIGH: ---</div>
           <div class="play-hint">▶ PRESS TO PLAY</div>
         </a>
+
+        <a href="frogger/index.html" class="game-card frogger">
+          <div class="game-icon">🐸</div>
+          <h2 class="game-title">FROGGER</h2>
+          <p class="game-description">
+            Guide the frog across busy highways and rivers! Don't get squashed or drown.
+          </p>
+          <div class="game-high-score" id="frogger-score">HIGH: ---</div>
+          <div class="play-hint">▶ PRESS TO PLAY</div>
+        </a>
+
+        <a href="tron/index.html" class="game-card tron">
+          <div class="game-icon">🏍️</div>
+          <h2 class="game-title">TRON</h2>
+          <p class="game-description">
+            Light cycle battle! Leave a wall trail and trap your opponent before they trap you.
+          </p>
+          <div class="game-high-score" id="tron-score">HIGH: ---</div>
+          <div class="play-hint">▶ PRESS TO PLAY</div>
+        </a>
+
+        <a href="missile-command/index.html" class="game-card missile-command">
+          <div class="game-icon">🎯</div>
+          <h2 class="game-title">MISSILE COMMAND</h2>
+          <p class="game-description">
+            Defend your cities from incoming missiles! Click to launch counter-attacks.
+          </p>
+          <div class="game-high-score" id="missile-command-score">HIGH: ---</div>
+          <div class="play-hint">▶ PRESS TO PLAY</div>
+        </a>
+
+        <a href="centipede/index.html" class="game-card centipede">
+          <div class="game-icon">🪲</div>
+          <h2 class="game-title">CENTIPEDE</h2>
+          <p class="game-description">
+            Blast the bug through the mushroom field! Watch out for segments.
+          </p>
+          <div class="game-high-score" id="centipede-score">HIGH: ---</div>
+          <div class="play-hint">▶ PRESS TO PLAY</div>
+        </a>
       </div>
 
       <footer class="arcade-footer">
@@ -402,7 +488,7 @@
     </div>
 
     <script type="module">
-      import { getTopScore, getTopScoreEntry, getAllHighScores } from "./shared/highscore.js";
+      import { getTopScore, getTopScoreEntry, getAllHighScores, initHighScores } from "./shared/highscore.js";
 
       // Create starfield
       function createStars() {
@@ -421,12 +507,17 @@
       // Update high scores display
       function updateHighScores() {
         const games = [
+          "asteroids",
           "tetris",
           "pacman",
           "snake",
           "breakout",
           "space-invaders",
           "pong",
+          "frogger",
+          "tron",
+          "missile-command",
+          "centipede",
         ];
         const marqueeItems = [];
 
@@ -458,9 +549,11 @@
         }
       }
 
-      // Initialize
+      // Initialize - wait for scores to load before displaying
       createStars();
-      updateHighScores();
+      initHighScores().then(() => {
+        updateHighScores();
+      });
 
       // Add keyboard navigation
       document.addEventListener("keydown", (e) => {
