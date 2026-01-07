@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>FROGGER - Retro Arcade (Mobile)</title>
+    <link rel="stylesheet" href="../shared/arcade-theme.css">
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <style>
+        * {
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        html, body {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
+        .game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 10px;
+            padding-top: 5px;
+            box-sizing: border-box;
+            justify-content: flex-start;
+        }
+
+        /* Keyboard open state */
+        body.keyboard-open .game-title,
+        body.keyboard-open .stats-row,
+        body.keyboard-open canvas,
+        body.keyboard-open .back-btn {
+            display: none !important;
+        }
+        
+        body.keyboard-open .game-wrapper {
+            justify-content: center;
+        }
+
+        body.keyboard-open #gameover-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: flex-start;
+            padding-top: 20px;
+            background: #000;
+            z-index: 9999;
+        }
+
+        .game-title {
+            font-family: var(--font-pixel);
+            font-size: 24px;
+            color: var(--neon-green);
+            text-shadow: var(--glow-green);
+            margin-bottom: 10px;
+            letter-spacing: 4px;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 350px;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid var(--neon-green);
+            padding: 6px 10px;
+            text-align: center;
+            box-shadow: 0 0 8px var(--neon-green);
+            flex: 1;
+        }
+
+        .stat-label {
+            font-family: var(--font-pixel);
+            font-size: 8px;
+            color: var(--neon-green);
+            margin-bottom: 3px;
+        }
+
+        .stat-value {
+            font-family: var(--font-pixel);
+            font-size: 12px;
+            color: var(--neon-yellow);
+            text-shadow: 0 0 8px var(--neon-yellow);
+        }
+
+        .lives-container {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .life-icon { font-size: 12px; }
+
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 350px;
+        }
+
+        #game-canvas {
+            width: 105%; /* Enlarge slightly as requested */
+            margin-left: -2.5%;
+            aspect-ratio: 14/13;
+            border: 3px solid var(--neon-green);
+            box-shadow: 0 0 20px var(--neon-green);
+            background: #000;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .overlay.hidden { display: none; }
+
+        .overlay h2 {
+            font-family: var(--font-pixel);
+            font-size: 20px;
+            color: var(--neon-green);
+            text-shadow: var(--glow-green);
+            margin-bottom: 15px;
+        }
+
+        .overlay p {
+            font-family: var(--font-pixel);
+            font-size: 10px;
+            color: var(--neon-cyan);
+            margin: 8px 0;
+        }
+
+        .start-btn {
+            font-family: var(--font-pixel);
+            font-size: 14px;
+            padding: 15px 30px;
+            margin-top: 15px;
+            background: linear-gradient(180deg, #333, #111);
+            border: 3px solid var(--neon-green);
+            color: var(--neon-green);
+            cursor: pointer;
+        }
+
+        .start-btn:active {
+            background: var(--neon-green);
+            color: #000;
+        }
+
+        .instructions-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.98);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .instructions-modal.hidden { display: none; }
+
+        .instructions-modal h2 {
+            font-family: var(--font-pixel);
+            font-size: 18px;
+            color: var(--neon-green);
+            margin-bottom: 20px;
+        }
+
+        .instruction-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 12px 0;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .gesture-icon { font-size: 28px; min-width: 50px; text-align: center; }
+        .gesture-text { font-family: var(--font-pixel); font-size: 10px; color: var(--neon-cyan); }
+
+        .got-it-btn {
+            font-family: var(--font-pixel);
+            font-size: 14px;
+            padding: 15px 40px;
+            margin-top: 25px;
+            background: var(--neon-green);
+            border: none;
+            color: #000;
+            cursor: pointer;
+        }
+
+        .touch-hint {
+            font-family: var(--font-pixel);
+            font-size: 8px;
+            color: #666;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 10px;
+            padding: 5px 8px;
+            z-index: 50;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            text-decoration: none;
+            font-family: var(--font-pixel);
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div class="grid-bg"></div>
+    <a href="../index.html" class="back-btn">◀ ARCADE</a>
+
+    <div class="game-wrapper">
+        <h1 class="game-title">FROGGER</h1>
+
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="stat-label">SCORE</div>
+                <div class="stat-value" id="score">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">LEVEL</div>
+                <div class="stat-value" id="level">1</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">LIVES</div>
+                <div class="lives-container" id="lives-display"></div>
+            </div>
+        </div>
+
+        <div class="game-container">
+            <canvas id="game-canvas" width="350" height="325"></canvas>
+
+            <div class="overlay" id="start-overlay">
+                <h2>FROGGER</h2>
+                <p>MOBILE EDITION</p>
+                <button class="start-btn" id="start-btn">TAP TO START</button>
+            </div>
+
+            <div class="overlay hidden" id="pause-overlay">
+                <h2>PAUSED</h2>
+                <button class="start-btn" id="resume-btn">RESUME</button>
+            </div>
+
+            <div class="overlay hidden" id="gameover-overlay">
+                <h2>GAME OVER</h2>
+                <p>SCORE: <span id="final-score">0</span></p>
+                <div id="high-score-section"></div>
+                <button class="start-btn" id="restart-btn">PLAY AGAIN</button>
+            </div>
+        </div>
+
+        <div class="touch-hint">SWIPE TO HOP IN THAT DIRECTION</div>
+    </div>
+
+    <!-- Instructions Modal -->
+    <div class="instructions-modal hidden" id="instructions-modal">
+        <h2>HOW TO PLAY</h2>
+        
+        <div class="instruction-item">
+            <div class="gesture-icon">👆</div>
+            <div class="gesture-text">SWIPE UP to hop forward</div>
+        </div>
+        
+        <div class="instruction-item">
+            <div class="gesture-icon">👇</div>
+            <div class="gesture-text">SWIPE DOWN to hop back</div>
+        </div>
+        
+        <div class="instruction-item">
+            <div class="gesture-icon">👈👉</div>
+            <div class="gesture-text">SWIPE LEFT/RIGHT to hop sideways</div>
+        </div>
+        
+        <div class="instruction-item">
+            <div class="gesture-icon">🚗</div>
+            <div class="gesture-text">Avoid cars on the road!</div>
+        </div>
+        
+        <div class="instruction-item">
+            <div class="gesture-icon">🪵</div>
+            <div class="gesture-text">Ride logs across the river</div>
+        </div>
+        
+        <button class="got-it-btn" id="got-it-btn">GOT IT!</button>
+    </div>
+
+    <script type="module">
+        import { getTopScore, isHighScore, addHighScore, getTopScoreEntry } from '../shared/highscore.js';
+
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const GAME_NAME = 'frogger';
+        
+        const TILE_SIZE = 25;
+        const COLS = 14;
+        const ROWS = 13;
+        
+        let score = 0;
+        let level = 1;
+        let lives = 3;
+        let gameStarted = false;
+        let paused = false;
+        let gameOver = false;
+        let animationId;
+        let homesReached = [false, false, false, false, false];
+        
+        let frog = { x: 7, y: 12 };
+        let frogDying = false;
+        let frogDeathTime = 0;
+        const DEATH_DELAY = 800;
+        
+        const lanes = [];
+        
+        // Touch tracking
+        let touchStartX = 0;
+        let touchStartY = 0;
+        const SWIPE_THRESHOLD = 30;
+
+        const instructionsModal = document.getElementById('instructions-modal');
+
+        function checkFirstPlay() {
+            if (!localStorage.getItem('froggerMobileFirstPlay')) {
+                instructionsModal.classList.remove('hidden');
+            }
+        }
+
+        function dismissInstructions() {
+            localStorage.setItem('froggerMobileFirstPlay', 'true');
+            instructionsModal.classList.add('hidden');
+        }
+        
+        function initLanes() {
+            lanes.length = 0;
+            const speedMult = 1 + (level - 1) * 0.15;
+            
+            lanes[1] = { type: 'log', objects: createObjects(3, 3, 0.4 * speedMult), color: '#8B4513' };
+            lanes[2] = { type: 'turtle', objects: createObjects(4, 2, -0.3 * speedMult), color: '#228B22' };
+            lanes[3] = { type: 'log', objects: createObjects(2, 4, 0.5 * speedMult), color: '#8B4513' };
+            lanes[4] = { type: 'turtle', objects: createObjects(3, 2, -0.35 * speedMult), color: '#228B22' };
+            lanes[5] = { type: 'log', objects: createObjects(3, 3, 0.3 * speedMult), color: '#8B4513' };
+            
+            lanes[7] = { type: 'car', objects: createObjects(3, 1, -0.5 * speedMult), color: '#ff0055' };
+            lanes[8] = { type: 'truck', objects: createObjects(2, 2, 0.35 * speedMult), color: '#ffaa00' };
+            lanes[9] = { type: 'car', objects: createObjects(3, 1, -0.6 * speedMult), color: '#00ffff' };
+            lanes[10] = { type: 'car', objects: createObjects(4, 1, 0.4 * speedMult), color: '#ff00ff' };
+            lanes[11] = { type: 'truck', objects: createObjects(2, 2, -0.3 * speedMult), color: '#00ff00' };
+        }
+        
+        function createObjects(count, width, speed) {
+            const objects = [];
+            const spacing = COLS * TILE_SIZE / count;
+            for (let i = 0; i < count; i++) {
+                objects.push({
+                    x: i * spacing + Math.random() * 30,
+                    width: width * TILE_SIZE,
+                    speed: speed
+                });
+            }
+            return objects;
+        }
+        
+        function updateLivesDisplay() {
+            const el = document.getElementById('lives-display');
+            el.innerHTML = '';
+            for (let i = 0; i < lives; i++) {
+                const life = document.createElement('span');
+                life.className = 'life-icon';
+                life.textContent = '🐸';
+                el.appendChild(life);
+            }
+        }
+        
+        function resetFrog() {
+            frog.x = 7;
+            frog.y = 12;
+        }
+        
+        function update() {
+            if (!gameStarted || gameOver || paused || frogDying) return;
+            
+            for (let row = 1; row <= 11; row++) {
+                if (!lanes[row]) continue;
+                for (let obj of lanes[row].objects) {
+                    obj.x += obj.speed;
+                    if (obj.speed > 0 && obj.x > COLS * TILE_SIZE) obj.x = -obj.width;
+                    else if (obj.speed < 0 && obj.x + obj.width < 0) obj.x = COLS * TILE_SIZE;
+                }
+            }
+            
+            const frogX = frog.x * TILE_SIZE;
+            const frogY = frog.y * TILE_SIZE;
+            
+            if (frog.y >= 1 && frog.y <= 5) {
+                const lane = lanes[frog.y];
+                let onPlatform = false;
+                
+                for (let obj of lane.objects) {
+                    if (frogX + TILE_SIZE/2 > obj.x && frogX + TILE_SIZE/2 < obj.x + obj.width) {
+                        onPlatform = true;
+                        frog.x += obj.speed / TILE_SIZE;
+                        break;
+                    }
+                }
+                
+                if (!onPlatform || frog.x < 0 || frog.x >= COLS) {
+                    loseLife();
+                    return;
+                }
+            }
+            
+            if (frog.y >= 7 && frog.y <= 11) {
+                const lane = lanes[frog.y];
+                for (let obj of lane.objects) {
+                    if (frogX + TILE_SIZE > obj.x && frogX < obj.x + obj.width) {
+                        loseLife();
+                        return;
+                    }
+                }
+            }
+            
+            if (frog.y === 0) {
+                const homeIndex = Math.floor(frog.x / 2.8);
+                if (homeIndex >= 0 && homeIndex < 5 && !homesReached[homeIndex]) {
+                    homesReached[homeIndex] = true;
+                    score += 50 + level * 10;
+                    document.getElementById('score').textContent = score;
+                    
+                    if (homesReached.every(h => h)) {
+                        level++;
+                        document.getElementById('level').textContent = level;
+                        score += 1000;
+                        document.getElementById('score').textContent = score;
+                        homesReached.fill(false);
+                        initLanes();
+                    }
+                    resetFrog();
+                } else {
+                    loseLife();
+                }
+            }
+        }
+        
+        function loseLife() {
+            frogDying = true;
+            frogDeathTime = performance.now();
+            lives--;
+            updateLivesDisplay();
+            
+            setTimeout(() => {
+                frogDying = false;
+                if (lives <= 0) endGame();
+                else resetFrog();
+            }, DEATH_DELAY);
+        }
+        
+        function draw() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            if (!gameStarted) return;
+            
+            // Home zone
+            ctx.fillStyle = '#001a00';
+            ctx.fillRect(0, 0, canvas.width, TILE_SIZE);
+            
+            for (let i = 0; i < 5; i++) {
+                const x = i * 2.8 * TILE_SIZE + TILE_SIZE * 0.4;
+                ctx.fillStyle = homesReached[i] ? '#00ff00' : '#003300';
+                ctx.fillRect(x, 3, TILE_SIZE * 1.2, TILE_SIZE - 6);
+                if (homesReached[i]) {
+                    ctx.font = '16px Arial';
+                    ctx.fillText('🐸', x + 4, TILE_SIZE - 5);
+                }
+            }
+            
+            // Water
+            ctx.fillStyle = '#000066';
+            ctx.fillRect(0, TILE_SIZE, canvas.width, TILE_SIZE * 5);
+            
+            // Safe zone
+            ctx.fillStyle = '#003300';
+            ctx.fillRect(0, TILE_SIZE * 6, canvas.width, TILE_SIZE);
+            
+            // Road
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, TILE_SIZE * 7, canvas.width, TILE_SIZE * 5);
+            
+            ctx.strokeStyle = '#ffff00';
+            ctx.setLineDash([15, 15]);
+            for (let i = 8; i <= 11; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * TILE_SIZE);
+                ctx.lineTo(canvas.width, i * TILE_SIZE);
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+            
+            // Start zone
+            ctx.fillStyle = '#003300';
+            ctx.fillRect(0, TILE_SIZE * 12, canvas.width, TILE_SIZE);
+            
+            // Lane objects
+            for (let row = 1; row <= 11; row++) {
+                if (!lanes[row]) continue;
+                const lane = lanes[row];
+                ctx.fillStyle = lane.color;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = lane.color;
+                
+                for (let obj of lane.objects) {
+                    const y = row * TILE_SIZE + 3;
+                    const h = TILE_SIZE - 6;
+                    ctx.fillRect(obj.x, y, obj.width, h);
+                    
+                    if (lane.type === 'car' || lane.type === 'truck') {
+                        ctx.fillStyle = '#fff';
+                        ctx.fillRect(obj.x + 3, y + h/4, 5, h/2);
+                        ctx.fillStyle = lane.color;
+                    }
+                }
+                ctx.shadowBlur = 0;
+            }
+            
+            // Frog
+            const frogX = frog.x * TILE_SIZE;
+            const frogY = frog.y * TILE_SIZE;
+            
+            if (frogDying) {
+                const elapsed = performance.now() - frogDeathTime;
+                const flash = Math.floor(elapsed / 100) % 2;
+                ctx.fillStyle = flash ? '#ff0000' : '#ff6600';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#ff0000';
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = ctx.fillStyle;
+                ctx.beginPath();
+                ctx.moveTo(frogX + 3, frogY + 3);
+                ctx.lineTo(frogX + TILE_SIZE - 3, frogY + TILE_SIZE - 3);
+                ctx.moveTo(frogX + TILE_SIZE - 3, frogY + 3);
+                ctx.lineTo(frogX + 3, frogY + TILE_SIZE - 3);
+                ctx.stroke();
+            } else {
+                ctx.fillStyle = '#00ff00';
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = '#00ff00';
+                ctx.beginPath();
+                ctx.arc(frogX + TILE_SIZE/2, frogY + TILE_SIZE/2, TILE_SIZE/2 - 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(frogX + TILE_SIZE/3, frogY + TILE_SIZE/3, 3, 0, Math.PI * 2);
+                ctx.arc(frogX + TILE_SIZE*2/3, frogY + TILE_SIZE/3, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(frogX + TILE_SIZE/3, frogY + TILE_SIZE/3, 1.5, 0, Math.PI * 2);
+                ctx.arc(frogX + TILE_SIZE*2/3, frogY + TILE_SIZE/3, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+        }
+        
+        function gameLoop() {
+            update();
+            draw();
+            if (!gameOver) animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function startGame() {
+            score = 0;
+            level = 1;
+            lives = 3;
+            gameOver = false;
+            paused = false;
+            homesReached.fill(false);
+            
+            document.getElementById('score').textContent = '0';
+            document.getElementById('level').textContent = '1';
+            updateLivesDisplay();
+            
+            initLanes();
+            resetFrog();
+            
+            document.getElementById('start-overlay').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.add('hidden');
+            gameStarted = true;
+            
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function togglePause() {
+            if (!gameStarted || gameOver) return;
+            paused = !paused;
+            document.getElementById('pause-overlay').classList.toggle('hidden', !paused);
+            if (!paused) animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function endGame() {
+            gameOver = true;
+            if (animationId) cancelAnimationFrame(animationId);
+            
+            document.getElementById('final-score').textContent = score;
+            
+            const highScoreSection = document.getElementById('high-score-section');
+            highScoreSection.innerHTML = '';
+            
+            if (isHighScore(GAME_NAME, score)) {
+                const savedInitials = localStorage.getItem('retroArcade_playerInitials') || 'AAA';
+                highScoreSection.innerHTML = `
+                    <p style="font-family: var(--font-pixel); font-size: 12px; color: var(--neon-green); margin: 15px 0 8px;">NEW HIGH SCORE!</p>
+                    <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 12px;">
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[0]}" style="width: 35px; height: 45px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 18px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[1]}" style="width: 35px; height: 45px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 18px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[2]}" style="width: 35px; height: 45px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 18px; text-align: center; text-transform: uppercase;"/>
+                    </div>
+                    <button id="save-score-btn" style="font-family: var(--font-pixel); font-size: 10px; padding: 10px 20px; background: var(--neon-green); border: none; color: #000;">SAVE SCORE</button>
+                `;
+                
+                const inputs = highScoreSection.querySelectorAll('.hs-input');
+                inputs.forEach((input, index) => {
+                    input.addEventListener('focus', () => {
+                        document.body.classList.add('keyboard-open');
+                        window.scrollTo(0, 0);
+                    });
+                    input.addEventListener('blur', () => {
+                        setTimeout(() => {
+                            if (!document.activeElement.classList.contains('hs-input')) {
+                                document.body.classList.remove('keyboard-open');
+                            }
+                        }, 100);
+                    });
+                    input.addEventListener('input', (e) => {
+                        e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                        if (e.target.value && index < 2) inputs[index + 1].focus();
+                    });
+                });
+                
+                document.getElementById('save-score-btn').addEventListener('click', () => {
+                    const name = Array.from(inputs).map(i => i.value || ' ').join('');
+                    addHighScore(GAME_NAME, name, score);
+                    highScoreSection.innerHTML = '<p style="color: var(--neon-green); margin-top: 15px; font-family: var(--font-pixel); font-size: 11px;">SCORE SAVED!</p>';
+                });
+            }
+            
+            document.getElementById('gameover-overlay').classList.remove('hidden');
+        }
+        
+        // Touch Controls - swipe to hop
+        function handleTouchStart(e) {
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+        }
+        
+        function handleTouchEnd(e) {
+            if (!gameStarted || gameOver || paused || frogDying) return;
+            
+            const touch = e.changedTouches[0];
+            const deltaX = touch.clientX - touchStartX;
+            const deltaY = touch.clientY - touchStartY;
+            
+            if (Math.abs(deltaX) < SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_THRESHOLD) return;
+            
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                if (deltaX > 0 && frog.x < COLS - 1) frog.x++;
+                else if (deltaX < 0 && frog.x > 0) frog.x--;
+            } else {
+                if (deltaY < 0 && frog.y > 0) {
+                    frog.y--;
+                    score += 10;
+                    document.getElementById('score').textContent = score;
+                } else if (deltaY > 0 && frog.y < 12) {
+                    frog.y++;
+                }
+            }
+        }
+        
+        document.addEventListener('touchstart', handleTouchStart, { passive: true });
+        document.addEventListener('touchend', handleTouchEnd, { passive: true });
+        document.addEventListener('touchmove', (e) => {
+            if (gameStarted && !gameOver) e.preventDefault();
+        }, { passive: false });
+        
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+        document.getElementById('resume-btn').addEventListener('click', togglePause);
+        document.getElementById('got-it-btn').addEventListener('click', dismissInstructions);
+        
+        const entry = getTopScoreEntry(GAME_NAME);
+        updateLivesDisplay();
+        checkFirstPlay();
+    </script>
+</body>
+</html>

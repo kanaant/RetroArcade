@@ -2,101 +2,134 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TETRIS - Retro Arcade</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>TETRIS - Retro Arcade (Mobile)</title>
     <link rel="stylesheet" href="../shared/arcade-theme.css">
     <style>
+        * {
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        html, body {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
         .game-wrapper {
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            min-height: 100dvh;
+            padding: 10px;
+            padding-bottom: 30px; /* Interaction space */
+            box-sizing: border-box;
+            justify-content: flex-start;
+        }
+
+        /* Keyboard open state */
+        body.keyboard-open .game-title,
+        body.keyboard-open .stats-row,
+        body.keyboard-open .preview-row,
+        body.keyboard-open .game-board-container,
+        body.keyboard-open .back-btn {
+            display: none !important;
+        }
+        
+        body.keyboard-open .game-wrapper {
+            justify-content: center;
+        }
+
+        body.keyboard-open #gameover-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: flex-start;
+            padding-top: 20px;
+            background: #000;
+            z-index: 9999;
         }
 
         .game-title {
             font-family: var(--font-pixel);
-            font-size: 32px;
+            font-size: 24px;
             color: var(--neon-cyan);
             text-shadow: var(--glow-cyan);
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             letter-spacing: 4px;
         }
 
         .game-layout {
             display: flex;
-            gap: 30px;
-            align-items: flex-start;
-        }
-
-        /* Side Panel */
-        .side-panel {
-            display: flex;
             flex-direction: column;
-            gap: 20px;
-            min-width: 150px;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            max-width: 400px;
         }
 
-        .panel-box {
+        /* Top Stats Row */
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            gap: 10px;
+        }
+
+        .stat-box {
             background: rgba(0, 0, 0, 0.7);
             border: 2px solid var(--neon-cyan);
-            padding: 15px;
+            padding: 8px 12px;
             text-align: center;
             box-shadow: 0 0 10px var(--neon-cyan);
+            flex: 1;
         }
 
-        .panel-label {
+        .stat-label {
             font-family: var(--font-pixel);
-            font-size: 10px;
+            font-size: 8px;
             color: var(--neon-cyan);
-            margin-bottom: 10px;
+            margin-bottom: 4px;
         }
 
-        .panel-value {
+        .stat-value {
             font-family: var(--font-pixel);
-            font-size: 16px;
+            font-size: 14px;
             color: var(--neon-yellow);
             text-shadow: 0 0 10px var(--neon-yellow);
-        }
-
-        /* Next/Hold Piece Display */
-        .piece-display {
-            display: grid;
-            grid-template-columns: repeat(4, 20px);
-            grid-template-rows: repeat(4, 20px);
-            gap: 1px;
-            justify-content: center;
-            margin-top: 10px;
-        }
-
-        .preview-cell {
-            width: 20px;
-            height: 20px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         /* Game Board */
         .game-board-container {
             position: relative;
+            width: 100%;
+            max-width: 320px;
         }
 
         #game-board {
             display: grid;
-            grid-template-columns: repeat(10, 30px);
-            grid-template-rows: repeat(20, 30px);
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(20, 1fr);
             gap: 1px;
             background: rgba(0, 0, 0, 0.9);
-            border: 4px solid var(--neon-cyan);
+            border: 3px solid var(--neon-cyan);
             box-shadow: 
                 0 0 20px var(--neon-cyan),
                 inset 0 0 30px rgba(0, 255, 255, 0.1);
             padding: 2px;
+            aspect-ratio: 10 / 20;
+            width: 100%;
         }
 
         .cell {
-            width: 30px;
-            height: 30px;
             background: rgba(20, 20, 30, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.05);
             transition: background 0.1s ease;
@@ -112,7 +145,45 @@
         .cell.L { background: linear-gradient(135deg, #ff8800, #aa5500); box-shadow: inset 0 0 10px rgba(255, 136, 0, 0.5); border-color: #ff8800; }
         .cell.ghost { background: rgba(255, 255, 255, 0.1); border: 1px dashed rgba(255, 255, 255, 0.3); }
 
-        /* Same colors for preview */
+        /* Preview pieces */
+        .preview-row {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            gap: 10px;
+        }
+
+        .preview-box {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid var(--neon-cyan);
+            padding: 8px;
+            text-align: center;
+            box-shadow: 0 0 10px var(--neon-cyan);
+            flex: 1;
+        }
+
+        .preview-label {
+            font-family: var(--font-pixel);
+            font-size: 8px;
+            color: var(--neon-cyan);
+            margin-bottom: 6px;
+        }
+
+        .piece-display {
+            display: grid;
+            grid-template-columns: repeat(4, 12px);
+            grid-template-rows: repeat(2, 12px);
+            gap: 1px;
+            justify-content: center;
+        }
+
+        .preview-cell {
+            width: 12px;
+            height: 12px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
         .preview-cell.I { background: linear-gradient(135deg, #00f5ff, #00a0aa); }
         .preview-cell.O { background: linear-gradient(135deg, #ffff00, #ccaa00); }
         .preview-cell.T { background: linear-gradient(135deg, #aa00ff, #7700aa); }
@@ -128,12 +199,14 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 10;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         .overlay.hidden {
@@ -142,24 +215,25 @@
 
         .overlay h2 {
             font-family: var(--font-pixel);
-            font-size: 24px;
+            font-size: 20px;
             color: var(--neon-pink);
             text-shadow: var(--glow-pink);
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .overlay p {
             font-family: var(--font-pixel);
-            font-size: 12px;
+            font-size: 10px;
             color: var(--neon-cyan);
-            margin: 10px 0;
+            margin: 8px 0;
+            text-align: center;
         }
 
         .start-btn {
             font-family: var(--font-pixel);
             font-size: 14px;
             padding: 15px 30px;
-            margin-top: 20px;
+            margin-top: 15px;
             background: linear-gradient(180deg, #333, #111);
             border: 3px solid var(--neon-cyan);
             color: var(--neon-cyan);
@@ -167,48 +241,101 @@
             transition: all 0.3s ease;
         }
 
-        .start-btn:hover {
+        .start-btn:active {
             background: var(--neon-cyan);
             color: #000;
             box-shadow: 0 0 30px var(--neon-cyan);
         }
 
-        /* Controls Info */
-        .controls-info {
-            margin-top: 30px;
+        /* Instructions Modal */
+        .instructions-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.98);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .instructions-modal.hidden {
+            display: none;
+        }
+
+        .instructions-modal h2 {
+            font-family: var(--font-pixel);
+            font-size: 18px;
+            color: var(--neon-pink);
+            text-shadow: var(--glow-pink);
+            margin-bottom: 20px;
+        }
+
+        .instruction-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 12px 0;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .gesture-icon {
+            font-size: 28px;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .gesture-text {
+            font-family: var(--font-pixel);
+            font-size: 10px;
+            color: var(--neon-cyan);
+        }
+
+        .got-it-btn {
+            font-family: var(--font-pixel);
+            font-size: 14px;
+            padding: 15px 40px;
+            margin-top: 25px;
+            background: var(--neon-green);
+            border: none;
+            color: #000;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .got-it-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 0 30px var(--neon-green);
+        }
+
+        /* Touch hint */
+        .touch-hint {
             font-family: var(--font-pixel);
             font-size: 8px;
             color: #666;
             text-align: center;
-            line-height: 2;
+            margin-top: 10px;
         }
 
-        .controls-info span {
+        /* Back button adjustment */
+        .back-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 10px;
+            padding: 5px 8px;
+            z-index: 50;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--neon-cyan);
             color: var(--neon-cyan);
-        }
-
-        /* Line Clear Animation */
-        @keyframes lineClear {
-            0% { background: white; transform: scaleY(1); }
-            100% { background: transparent; transform: scaleY(0); }
-        }
-
-        .clearing {
-            animation: lineClear 0.3s ease-out forwards;
-        }
-
-        /* Responsive */
-        @media (max-width: 700px) {
-            .game-layout {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .side-panel {
-                flex-direction: row;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
+            text-decoration: none;
+            font-family: var(--font-pixel);
         }
     </style>
 </head>
@@ -221,11 +348,29 @@
         <h1 class="game-title">TETRIS</h1>
 
         <div class="game-layout">
-            <div class="side-panel">
-                <div class="panel-box">
-                    <div class="panel-label">HOLD</div>
+            <div class="stats-row">
+                <div class="stat-box">
+                    <div class="stat-label">SCORE</div>
+                    <div class="stat-value" id="score">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">LEVEL</div>
+                    <div class="stat-value" id="level">1</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">LINES</div>
+                    <div class="stat-value" id="lines">0</div>
+                </div>
+            </div>
+
+            <div class="preview-row">
+                <div class="preview-box">
+                    <div class="preview-label">HOLD</div>
                     <div class="piece-display" id="hold-piece"></div>
-                    <div style="font-size: 8px; color: #666; margin-top: 5px;">SHIFT</div>
+                </div>
+                <div class="preview-box">
+                    <div class="preview-label">NEXT</div>
+                    <div class="piece-display" id="next-piece"></div>
                 </div>
             </div>
 
@@ -234,18 +379,14 @@
                 
                 <div class="overlay" id="start-overlay">
                     <h2>TETRIS</h2>
-                    <p>CLASSIC PUZZLE</p>
-                    <button class="start-btn" id="start-btn">START GAME</button>
-                    <div class="controls-info">
-                        <span>←→</span> MOVE | <span>↑</span> ROTATE<br>
-                        <span>↓</span> SOFT DROP | <span>SPACE</span> HARD DROP<br>
-                        <span>SHIFT</span> HOLD | <span>P</span> PAUSE
-                    </div>
+                    <p>MOBILE EDITION</p>
+                    <button class="start-btn" id="start-btn">TAP TO START</button>
                 </div>
 
                 <div class="overlay hidden" id="pause-overlay">
                     <h2>PAUSED</h2>
-                    <p>PRESS P TO CONTINUE</p>
+                    <p>TAP TO CONTINUE</p>
+                    <button class="start-btn" id="resume-btn">RESUME</button>
                 </div>
 
                 <div class="overlay hidden" id="gameover-overlay">
@@ -258,44 +399,55 @@
                 </div>
             </div>
 
-            <div class="side-panel">
-                <div class="panel-box">
-                    <div class="panel-label">SCORE</div>
-                    <div class="panel-value" id="score">0</div>
-                </div>
-                <div class="panel-box">
-                    <div class="panel-label">LEVEL</div>
-                    <div class="panel-value" id="level">1</div>
-                </div>
-                <div class="panel-box">
-                    <div class="panel-label">LINES</div>
-                    <div class="panel-value" id="lines">0</div>
-                </div>
-                <div class="panel-box">
-                    <div class="panel-label">NEXT</div>
-                    <div class="piece-display" id="next-piece"></div>
-                </div>
-                <div class="panel-box">
-                    <div class="panel-label">HIGH</div>
-                    <div class="panel-value" id="high-score">0</div>
-                </div>
-            </div>
+            <div class="touch-hint">SWIPE TO MOVE • TAP TO ROTATE • SWIPE UP TO DROP</div>
         </div>
     </div>
 
-    <script type="module">
-        // Mobile detection and redirect
-        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-            window.location.href = 'mobile.html';
-        }
+    <!-- Instructions Modal -->
+    <div class="instructions-modal hidden" id="instructions-modal">
+        <h2>HOW TO PLAY</h2>
+        
+        <div class="instruction-item">
+            <div class="gesture-icon">👆</div>
+            <div class="gesture-text">TAP to rotate piece</div>
+        </div>
+        
+        <div class="instruction-item">
+            <div class="gesture-icon">👈</div>
+            <div class="gesture-text">SWIPE LEFT to move left</div>
+        </div>
+        
+        <div class="instruction-item">
+            <div class="gesture-icon">👉</div>
+            <div class="gesture-text">SWIPE RIGHT to move right</div>
+        </div>
+        
+        <div class="instruction-item">
+            <div class="gesture-icon">👇</div>
+            <div class="gesture-text">SWIPE DOWN for soft drop</div>
+        </div>
+        
+        <div class="instruction-item">
+            <div class="gesture-icon">👆⬆️</div>
+            <div class="gesture-text">SWIPE UP for hard drop</div>
+        </div>
+        
+        <div class="instruction-item">
+            <div class="gesture-icon">✌️</div>
+            <div class="gesture-text">TWO-FINGER TAP to hold piece</div>
+        </div>
+        
+        <button class="got-it-btn" id="got-it-btn">GOT IT!</button>
+    </div>
 
-        import { getTopScore, isHighScore, addHighScore, createHighScoreInput } from '../shared/highscore.js';
+    <script type="module">
+        import { getTopScore, isHighScore, addHighScore } from '../shared/highscore.js';
 
         const GAME_NAME = 'tetris';
         const BOARD_WIDTH = 10;
         const BOARD_HEIGHT = 20;
         
-        // Tetromino definitions with names for colors
+        // Tetromino definitions
         const TETROMINOES = {
             I: { shape: [[1,1,1,1]], color: 'I' },
             O: { shape: [[1,1],[1,1]], color: 'O' },
@@ -307,7 +459,7 @@
         };
 
         const PIECE_NAMES = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
-        const POINTS = { 1: 100, 2: 300, 3: 500, 4: 800 }; // Points per lines cleared
+        const POINTS = { 1: 100, 2: 300, 3: 500, 4: 800 };
 
         // Game state
         let board = [];
@@ -325,23 +477,42 @@
         let lastDrop = 0;
         let animationId = null;
 
+        // Touch tracking
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchStartTime = 0;
+        let isSwiping = false;
+
         // DOM elements
         const gameBoard = document.getElementById('game-board');
         const scoreEl = document.getElementById('score');
         const levelEl = document.getElementById('level');
         const linesEl = document.getElementById('lines');
-        const highScoreEl = document.getElementById('high-score');
         const nextPieceEl = document.getElementById('next-piece');
         const holdPieceEl = document.getElementById('hold-piece');
         const startOverlay = document.getElementById('start-overlay');
         const pauseOverlay = document.getElementById('pause-overlay');
         const gameoverOverlay = document.getElementById('gameover-overlay');
+        const instructionsModal = document.getElementById('instructions-modal');
+
+        // Check if first time playing
+        function checkFirstPlay() {
+            const hasPlayed = localStorage.getItem('tetrisMobileFirstPlay');
+            if (!hasPlayed) {
+                instructionsModal.classList.remove('hidden');
+            }
+        }
+
+        function dismissInstructions() {
+            localStorage.setItem('tetrisMobileFirstPlay', 'true');
+            instructionsModal.classList.add('hidden');
+        }
 
         // Initialize
         function init() {
-            highScoreEl.textContent = getTopScore(GAME_NAME).toLocaleString();
             createBoard();
             createPieceDisplays();
+            checkFirstPlay();
         }
 
         function createBoard() {
@@ -363,7 +534,7 @@
         function createPieceDisplays() {
             [nextPieceEl, holdPieceEl].forEach(el => {
                 el.innerHTML = '';
-                for (let i = 0; i < 16; i++) {
+                for (let i = 0; i < 8; i++) {
                     const cell = document.createElement('div');
                     cell.className = 'preview-cell';
                     el.appendChild(cell);
@@ -439,7 +610,7 @@
                     board.splice(y, 1);
                     board.unshift(Array(BOARD_WIDTH).fill(null));
                     linesCleared++;
-                    y++; // Check same row again
+                    y++;
                 }
             }
             
@@ -447,7 +618,6 @@
                 lines += linesCleared;
                 score += POINTS[linesCleared] * level;
                 
-                // Level up every 10 lines
                 const newLevel = Math.floor(lines / 10) + 1;
                 if (newLevel > level) {
                     level = newLevel;
@@ -502,7 +672,7 @@
             if (!piece) return;
             
             const offsetX = Math.floor((4 - piece.shape[0].length) / 2);
-            const offsetY = Math.floor((4 - piece.shape.length) / 2);
+            const offsetY = Math.floor((2 - piece.shape.length) / 2);
             
             for (let y = 0; y < piece.shape.length; y++) {
                 for (let x = 0; x < piece.shape[y].length; x++) {
@@ -525,12 +695,10 @@
                 const y = parseInt(cell.dataset.y);
                 cell.className = 'cell';
                 
-                // Draw board
                 if (board[y][x]) {
                     cell.classList.add(board[y][x]);
                 }
                 
-                // Draw ghost
                 if (currentPiece && ghostY !== null && ghostY !== currentPiece.y) {
                     const pieceY = y - ghostY;
                     const pieceX = x - currentPiece.x;
@@ -541,7 +709,6 @@
                     }
                 }
                 
-                // Draw current piece
                 if (currentPiece) {
                     const pieceY = y - currentPiece.y;
                     const pieceX = x - currentPiece.x;
@@ -563,12 +730,14 @@
         function moveLeft() {
             if (isValidPosition(currentPiece, -1, 0)) {
                 currentPiece.x--;
+                draw();
             }
         }
 
         function moveRight() {
             if (isValidPosition(currentPiece, 1, 0)) {
                 currentPiece.x++;
+                draw();
             }
         }
 
@@ -586,17 +755,26 @@
             }
             placePiece();
             updateHUD();
+            draw();
+        }
+
+        function softDrop() {
+            if (moveDown()) {
+                score += 1;
+                updateHUD();
+                draw();
+            }
         }
 
         function rotate() {
             const rotated = rotatePiece(currentPiece);
             
-            // Wall kick attempts
             const kicks = [0, -1, 1, -2, 2];
             for (const kick of kicks) {
                 if (isValidPosition({ ...rotated, x: currentPiece.x + kick })) {
                     currentPiece.shape = rotated.shape;
                     currentPiece.x += kick;
+                    draw();
                     return;
                 }
             }
@@ -664,25 +842,33 @@
             highScoreSection.innerHTML = '';
             
             if (isHighScore(GAME_NAME, score)) {
-                // Create inline high score input
                 const savedInitials = localStorage.getItem('retroArcade_playerInitials') || 'AAA';
 
                 highScoreSection.innerHTML = `
-                    <p style="font-family: var(--font-pixel); font-size: 14px; color: var(--neon-green); margin: 20px 0 10px;">NEW HIGH SCORE!</p>
-                    <p style="font-family: var(--font-pixel); font-size: 10px; color: var(--neon-cyan); margin-bottom: 15px;">ENTER INITIALS:</p>
-                    <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
-                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[0]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
-                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[1]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
-                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[2]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
+                    <p style="font-family: var(--font-pixel); font-size: 12px; color: var(--neon-green); margin: 15px 0 8px;">NEW HIGH SCORE!</p>
+                    <p style="font-family: var(--font-pixel); font-size: 9px; color: var(--neon-cyan); margin-bottom: 10px;">ENTER INITIALS:</p>
+                    <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 12px;">
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[0]}" style="width: 35px; height: 45px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 18px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[1]}" style="width: 35px; height: 45px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 18px; text-align: center; text-transform: uppercase;"/>
+                        <input type="text" class="hs-input" maxlength="1" value="${savedInitials[2]}" style="width: 35px; height: 45px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 18px; text-align: center; text-transform: uppercase;"/>
                     </div>
                     <button id="save-score-btn" style="font-family: var(--font-pixel); font-size: 10px; padding: 10px 20px; background: var(--neon-green); border: none; color: #000; cursor: pointer;">SAVE SCORE</button>
                 `;
                 
                 const inputs = highScoreSection.querySelectorAll('.hs-input');
                 
-                // Auto-select content when focused
                 inputs.forEach((input, index) => {
-                    input.addEventListener('focus', () => input.select());
+                    input.addEventListener('focus', () => {
+                        document.body.classList.add('keyboard-open');
+                        window.scrollTo(0, 0);
+                    });
+                    input.addEventListener('blur', () => {
+                        setTimeout(() => {
+                            if (!document.activeElement.classList.contains('hs-input')) {
+                                document.body.classList.remove('keyboard-open');
+                            }
+                        }, 100);
+                    });
                     input.addEventListener('input', (e) => {
                         e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
                         if (e.target.value && index < 2) {
@@ -691,68 +877,95 @@
                     });
                 });
                 
-                // Delayed focus to ensure DOM is ready
-                setTimeout(() => {
-                    inputs[0].focus();
-                }, 100);
-                
                 document.getElementById('save-score-btn').addEventListener('click', () => {
                     const name = Array.from(inputs).map(i => i.value || ' ').join('');
                     addHighScore(GAME_NAME, name, score);
-                    highScoreEl.textContent = getTopScore(GAME_NAME).toLocaleString();
-                    highScoreSection.innerHTML = '<p style="color: var(--neon-green); margin-top: 20px; font-family: var(--font-pixel); font-size: 12px;">SCORE SAVED!</p>';
+                    highScoreSection.innerHTML = '<p style="color: var(--neon-green); margin-top: 15px; font-family: var(--font-pixel); font-size: 11px;">SCORE SAVED!</p>';
                 });
             }
             
             gameoverOverlay.classList.remove('hidden');
         }
 
+        // Touch Controls
+        const SWIPE_THRESHOLD = 30;
+        const TAP_THRESHOLD = 200;
+
+        function handleTouchStart(e) {
+            if (e.touches.length === 2) {
+                // Two-finger tap for hold
+                if (gameStarted && !gameOver && !paused) {
+                    holdCurrentPiece();
+                }
+                return;
+            }
+
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            touchStartTime = Date.now();
+            isSwiping = false;
+        }
+
+        function handleTouchMove(e) {
+            if (!gameStarted || gameOver || paused) return;
+            e.preventDefault();
+            
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - touchStartX;
+            const deltaY = touch.clientY - touchStartY;
+            
+            // Horizontal swipe
+            if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaX) > Math.abs(deltaY)) {
+                isSwiping = true;
+                if (deltaX > 0) {
+                    moveRight();
+                } else {
+                    moveLeft();
+                }
+                touchStartX = touch.clientX;
+            }
+            
+            // Vertical swipe
+            if (Math.abs(deltaY) > SWIPE_THRESHOLD && Math.abs(deltaY) > Math.abs(deltaX)) {
+                isSwiping = true;
+                if (deltaY > 0) {
+                    // Swipe down - soft drop
+                    softDrop();
+                } else {
+                    // Swipe up - hard drop
+                    hardDrop();
+                }
+                touchStartY = touch.clientY;
+            }
+        }
+
+        function handleTouchEnd(e) {
+            const touchDuration = Date.now() - touchStartTime;
+            
+            // Tap to rotate
+            if (!isSwiping && touchDuration < TAP_THRESHOLD && gameStarted && !gameOver && !paused) {
+                rotate();
+            }
+        }
+
         // Event listeners
         document.getElementById('start-btn').addEventListener('click', startGame);
         document.getElementById('restart-btn').addEventListener('click', startGame);
+        document.getElementById('resume-btn').addEventListener('click', togglePause);
+        document.getElementById('got-it-btn').addEventListener('click', dismissInstructions);
 
-        document.addEventListener('keydown', (e) => {
-            if (!gameStarted || gameOver) return;
-            
-            if (e.key === 'p' || e.key === 'P') {
-                togglePause();
-                return;
+        // Touch events on game board
+        gameBoard.addEventListener('touchstart', handleTouchStart, { passive: true });
+        gameBoard.addEventListener('touchmove', handleTouchMove, { passive: false });
+        gameBoard.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+        // Prevent default touch behaviors on the whole document
+        document.addEventListener('touchmove', (e) => {
+            if (gameStarted && !gameOver) {
+                e.preventDefault();
             }
-            
-            if (paused) return;
-            
-            switch(e.key) {
-                case 'ArrowLeft':
-                case 'a':
-                case 'A':
-                    moveLeft();
-                    break;
-                case 'ArrowRight':
-                case 'd':
-                case 'D':
-                    moveRight();
-                    break;
-                case 'ArrowDown':
-                case 's':
-                case 'S':
-                    if (moveDown()) score += 1;
-                    updateHUD();
-                    break;
-                case 'ArrowUp':
-                case 'w':
-                case 'W':
-                    rotate();
-                    break;
-                case ' ':
-                    e.preventDefault();
-                    hardDrop();
-                    break;
-                case 'Shift':
-                    holdCurrentPiece();
-                    break;
-            }
-            draw();
-        });
+        }, { passive: false });
 
         // Initialize
         init();
