@@ -2,146 +2,181 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPACE INVADERS - Retro Arcade</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SPACE INVADERS - Retro Arcade (Mobile)</title>
     <link rel="stylesheet" href="../shared/arcade-theme.css">
     <style>
+        /* Mobile Specific Overrides */
+        body {
+            overflow: hidden; /* Prevent scrolling */
+            touch-action: none; /* Disable browser zooming/panning */
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
         .game-wrapper {
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
-            padding: 20px;
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            padding-top: 60px; /* Header spacing */
+            box-sizing: border-box;
+            justify-content: flex-start;
         }
 
         .game-title {
             font-family: var(--font-pixel);
-            font-size: 28px;
+            font-size: 20px; /* Smaller title */
             color: var(--neon-purple);
-            text-shadow: 0 0 10px var(--neon-purple), 0 0 20px var(--neon-purple);
-            margin-bottom: 20px;
-            letter-spacing: 4px;
+            text-shadow: 0 0 10px var(--neon-purple);
+            margin-bottom: 5px;
+            letter-spacing: 2px;
+            text-align: center;
         }
 
         .game-hud {
             display: flex;
-            justify-content: space-between;
+            justify-content: space-around;
             align-items: center;
-            width: 600px;
-            margin-bottom: 15px;
+            width: 100%;
+            max-width: 350px;
+            margin-bottom: 5px;
             font-family: var(--font-pixel);
-            font-size: 14px;
+            font-size: 10px; /* Smaller HUD */
+            flex-wrap: wrap;
+            gap: 5px;
         }
 
         .hud-section {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 5px;
         }
 
-        .score-display {
-            color: var(--neon-green);
-            text-shadow: 0 0 10px var(--neon-green);
-        }
-
-        .high-score-display {
-            color: var(--neon-cyan);
-            text-shadow: 0 0 10px var(--neon-cyan);
-        }
-
-        .lives-display {
-            display: flex;
-            gap: 8px;
+        .score-display, .high-score-display, .level-display {
+            font-size: 10px;
         }
 
         .life-icon {
             width: 0;
             height: 0;
-            border-left: 10px solid transparent;
-            border-right: 10px solid transparent;
-            border-bottom: 15px solid var(--neon-green);
-            filter: drop-shadow(0 0 5px var(--neon-green));
-        }
-
-        .level-display {
-            color: var(--neon-yellow);
-            text-shadow: 0 0 10px var(--neon-yellow);
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 10px solid var(--neon-green);
         }
 
         .game-container {
             position: relative;
+            width: 100%;
+            max-width: 350px; /* Mobile width constraint */
+            /* Override shared theme */
+            min-height: auto;
+            padding: 0;
+            display: block;
+            margin-top: 100px; /* Requested margin */
         }
 
         #game-canvas {
-            border: 4px solid var(--neon-purple);
+            border: 2px solid var(--neon-purple);
             box-shadow: 
-                0 0 20px var(--neon-purple),
-                inset 0 0 30px rgba(128, 0, 255, 0.1);
+                0 0 10px var(--neon-purple),
+                inset 0 0 15px rgba(128, 0, 255, 0.1);
             background: #000;
+            width: 100%; /* Responsive width */
+            height: auto;
+            image-rendering: pixelated;
         }
 
-        .overlay {
-            position: absolute;
+        /* Overlay Adjustments */
+        .overlay h2 {
+            font-size: 20px;
+        }
+        .overlay p {
+            font-size: 10px;
+        }
+        .start-btn {
+            font-size: 12px;
+            padding: 10px 20px;
+        }
+
+        /* Back Button Override */
+        .back-btn {
+            position: absolute; /* Changed from fixed */
+            top: 10px;
+            left: 10px;
+            font-size: 8px; /* Smaller */
+            padding: 5px 10px;
+            z-index: 2000;
+        }
+        
+        /* Instructions Modal */
+        .instructions-modal {
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 10;
+            z-index: 3000;
+            padding: 20px;
+            text-align: center;
         }
-
-        .overlay.hidden {
+        
+        .instructions-modal.hidden {
             display: none;
         }
-
-        .overlay h2 {
+        
+        .instruction-icon {
+            font-size: 40px;
+            margin-bottom: 20px;
+            color: var(--neon-cyan);
+            animation: pulse 1.5s infinite;
+        }
+        
+        .instruction-text {
             font-family: var(--font-pixel);
-            font-size: 24px;
-            color: var(--neon-purple);
-            text-shadow: 0 0 10px var(--neon-purple), 0 0 20px var(--neon-purple);
+            color: #fff;
+            font-size: 12px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        
+        .instruction-step {
             margin-bottom: 20px;
         }
-
-        .overlay p {
-            font-family: var(--font-pixel);
-            font-size: 12px;
-            color: var(--neon-cyan);
-            margin: 10px 0;
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
-        .start-btn {
-            font-family: var(--font-pixel);
-            font-size: 14px;
-            padding: 15px 30px;
-            margin-top: 20px;
-            background: linear-gradient(180deg, #333, #111);
-            border: 3px solid var(--neon-purple);
-            color: var(--neon-purple);
-            cursor: pointer;
-            transition: all 0.3s ease;
+        /* Keyboard Handling */
+        body.keyboard-open .game-title,
+        body.keyboard-open .game-hud,
+        body.keyboard-open .game-container canvas,
+        body.keyboard-open .back-btn {
+            display: none !important;
         }
-
-        .start-btn:hover {
-            background: var(--neon-purple);
-            color: #000;
-            box-shadow: 0 0 30px var(--neon-purple);
+        
+        body.keyboard-open .game-container {
+            margin-top: 0 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
         }
-
-        .controls-info {
-            margin-top: 30px;
-            font-family: var(--font-pixel);
-            font-size: 8px;
-            color: #666;
-            text-align: center;
-            line-height: 2;
-        }
-
-        .controls-info span {
-            color: var(--neon-cyan);
+        
+        body.keyboard-open .overlay {
+            position: static;
+            background: transparent;
+            height: auto;
         }
     </style>
 </head>
@@ -169,22 +204,20 @@
         </div>
 
         <div class="game-container">
+            <!-- Canvas resolution matches original but CSS scales it -->
             <canvas id="game-canvas" width="600" height="500"></canvas>
 
             <div class="overlay" id="start-overlay">
                 <h2>SPACE INVADERS</h2>
                 <p>DEFEND EARTH!</p>
-                <p style="color: var(--neon-pink);">DESTROY ALL ALIENS</p>
-                <button class="start-btn" id="start-btn">START GAME</button>
-                <div class="controls-info">
-                    <span>←→</span> TO MOVE | <span>SPACE</span> TO SHOOT<br>
-                    <span>P</span> TO PAUSE
-                </div>
+                <button class="start-btn" id="start-btn">START MISSION</button>
             </div>
 
             <div class="overlay hidden" id="pause-overlay">
                 <h2>PAUSED</h2>
-                <p>PRESS P TO CONTINUE</p>
+                <p>TAP TO RESUME</p>
+                <button class="start-btn" id="resume-btn">RESUME</button>
+                <button class="start-btn" id="quit-btn" style="margin-top: 10px; border-color: var(--neon-red); color: var(--neon-red);">QUIT</button>
             </div>
 
             <div class="overlay hidden" id="gameover-overlay">
@@ -192,17 +225,35 @@
                 <p>SCORE: <span id="final-score">0</span></p>
                 <p>WAVE: <span id="final-level">1</span></p>
                 <div id="high-score-section"></div>
-                <button class="start-btn" id="restart-btn">PLAY AGAIN</button>
+                <button class="start-btn" id="restart-btn">Try Again</button>
             </div>
         </div>
     </div>
+    
+    <!-- Instructions Modal -->
+    <div class="instructions-modal" id="instructions-modal">
+        <h2 style="font-family: var(--font-pixel); color: var(--neon-purple); margin-bottom: 30px;">HOW TO PLAY</h2>
+        
+        <div class="instruction-step">
+            <div class="instruction-icon">👆↔️</div>
+            <div class="instruction-text">
+                <span style="color: var(--neon-cyan)">TOUCH & SLIDE</span><br>
+                ANYWHERE TO MOVE
+            </div>
+        </div>
+        
+        <div class="instruction-step">
+            <div class="instruction-icon">✌️💥</div>
+            <div class="instruction-text">
+                <span style="color: var(--neon-red)">SECOND FINGER TAP</span><br>
+                TO FIRE LASER
+            </div>
+        </div>
+        
+        <button class="start-btn" id="got-it-btn">GOT IT!</button>
+    </div>
 
     <script type="module">
-        // Mobile detection and redirect
-        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-            window.location.href = 'mobile.html';
-        }
-
         import { getTopScore, isHighScore, addHighScore, createHighScoreInput } from '../shared/highscore.js';
 
         const GAME_NAME = 'space-invaders';
@@ -218,15 +269,14 @@
         const ALIEN_COLS = 11;
         const BULLET_WIDTH = 3;
         const BULLET_HEIGHT = 10;
-        const SHIELD_WIDTH = 60;
-        const SHIELD_HEIGHT = 40;
-
-        // Alien types with different sprites and points
-        const ALIEN_TYPES = [
-            { points: 30, color: '#ff00ff' }, // Top row - squid
-            { points: 20, color: '#00ffff' }, // Middle rows - crab
-            { points: 10, color: '#00ff00' }  // Bottom rows - octopus
-        ];
+        
+        // Touch State
+        const touchState = {
+            moveId: null,
+            startX: 0,
+            currentX: 0,
+            playerStartX: 0
+        };
 
         // Game state
         let player = { x: 0, y: 0 };
@@ -246,10 +296,16 @@
         let gameOver = false;
         let paused = false;
         let gameStarted = false;
-        let keys = {};
         let lastShot = 0;
         let animationId = null;
         let frameCount = 0;
+        
+        // Alien types
+        const ALIEN_TYPES = [
+            { points: 30, color: '#ff00ff' }, // Top row - squid
+            { points: 20, color: '#00ffff' }, // Middle rows - crab
+            { points: 10, color: '#00ff00' }  // Bottom rows - octopus
+        ];
 
         // DOM elements
         const scoreEl = document.getElementById('score');
@@ -259,12 +315,88 @@
         const startOverlay = document.getElementById('start-overlay');
         const pauseOverlay = document.getElementById('pause-overlay');
         const gameoverOverlay = document.getElementById('gameover-overlay');
+        const instructionsModal = document.getElementById('instructions-modal');
 
         function init() {
             highScoreEl.textContent = getTopScore(GAME_NAME).toLocaleString();
             player.x = canvas.width / 2 - PLAYER_WIDTH / 2;
             player.y = canvas.height - 40;
             updateLivesDisplay();
+            
+            // Check first time play
+            if (localStorage.getItem('siMobileFirstPlay')) {
+                instructionsModal.classList.add('hidden');
+            }
+        }
+        
+        // --- TOUCH CONTROLS ---
+        
+        function handleTouchStart(e) {
+            e.preventDefault();
+            
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                
+                // If we don't have a movement finger yet, this is it
+                if (touchState.moveId === null) {
+                    touchState.moveId = touch.identifier;
+                    touchState.startX = touch.clientX;
+                    touchState.playerStartX = player.x;
+                } else {
+                    // This is a second finger -> FIRE!
+                    if (gameStarted && !paused && !gameOver) {
+                        fireBullet();
+                    }
+                }
+            }
+        }
+        
+        function handleTouchMove(e) {
+            e.preventDefault();
+            
+            if (!gameStarted || paused || gameOver) return;
+            
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                if (touch.identifier === touchState.moveId) {
+                    const deltaX = touch.clientX - touchState.startX;
+                    
+                    // Sensitivity factor for better control
+                    const sensitivity = 1.5;
+                    
+                    let newX = touchState.playerStartX + (deltaX * sensitivity);
+                    newX = Math.max(0, Math.min(canvas.width - PLAYER_WIDTH, newX));
+                    
+                    player.x = newX;
+                }
+            }
+        }
+        
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                if (touch.identifier === touchState.moveId) {
+                    touchState.moveId = null;
+                    // Keep player X where it is, ready for next touch to be relative
+                    // But we don't need to do anything else
+                }
+            }
+        }
+        
+        document.addEventListener('touchstart', handleTouchStart, { passive: false });
+        document.addEventListener('touchmove', handleTouchMove, { passive: false });
+        document.addEventListener('touchend', handleTouchEnd, { passive: false });
+        
+        function fireBullet() {
+            if (frameCount - lastShot > 20) {
+                playerBullets.push({
+                    x: player.x + PLAYER_WIDTH / 2 - BULLET_WIDTH / 2,
+                    y: player.y - BULLET_HEIGHT
+                });
+                lastShot = frameCount;
+            }
         }
 
         function createAliens() {
@@ -288,6 +420,7 @@
             }
             
             alienDirection = 1;
+            // Adjust speed for mobile slightly if needed, but keeping standard for now
             alienSpeed = 1 + (level - 1) * 0.2;
             alienMoveInterval = Math.max(10, 60 - (level - 1) * 5);
         }
@@ -298,13 +431,10 @@
             const positions = [75, 200, 325, 450];
             
             positions.forEach(x => {
-                // Create shield as array of blocks
                 const blocks = [];
                 for (let row = 0; row < 4; row++) {
                     for (let col = 0; col < 6; col++) {
-                        // Skip bottom corners for arch shape
                         if (row === 3 && (col === 2 || col === 3)) continue;
-                        
                         blocks.push({
                             x: x + col * 10,
                             y: shieldY + row * 10,
@@ -326,6 +456,8 @@
                 livesEl.appendChild(life);
             }
         }
+        
+        // --- DRAWING FUNCTIONS ---
 
         function drawPlayer() {
             ctx.fillStyle = '#00ff00';
@@ -352,36 +484,19 @@
                 
                 const type = ALIEN_TYPES[alien.type];
                 ctx.fillStyle = type.color;
-                ctx.shadowColor = type.color;
-                ctx.shadowBlur = 8;
                 
-                // Simple pixel art aliens
-                const cx = alien.x + alien.width / 2;
-                const cy = alien.y + alien.height / 2;
-                
-                if (alien.type === 0) {
-                    // Squid type
-                    drawSquidAlien(alien.x, alien.y, alien.frame);
-                } else if (alien.type === 1) {
-                    // Crab type
-                    drawCrabAlien(alien.x, alien.y, alien.frame);
-                } else {
-                    // Octopus type
-                    drawOctopusAlien(alien.x, alien.y, alien.frame);
-                }
-                
-                ctx.shadowBlur = 0;
+                // Simplified drawing for performance/clarity on mobile
+                if (alien.type === 0) drawSquidAlien(alien.x, alien.y, alien.frame);
+                else if (alien.type === 1) drawCrabAlien(alien.x, alien.y, alien.frame);
+                else drawOctopusAlien(alien.x, alien.y, alien.frame);
             });
         }
 
         function drawSquidAlien(x, y, frame) {
-            ctx.fillStyle = '#ff00ff';
-            // Simple squid shape
+            // Minimized complexity
             ctx.fillRect(x + 12, y, 6, 6);
             ctx.fillRect(x + 6, y + 6, 18, 6);
             ctx.fillRect(x + 3, y + 12, 24, 6);
-            ctx.fillRect(x + 6, y + 18, 3, 6);
-            ctx.fillRect(x + 21, y + 18, 3, 6);
             if (frame % 2 === 0) {
                 ctx.fillRect(x, y + 12, 3, 6);
                 ctx.fillRect(x + 27, y + 12, 3, 6);
@@ -389,12 +504,9 @@
         }
 
         function drawCrabAlien(x, y, frame) {
-            ctx.fillStyle = '#00ffff';
             ctx.fillRect(x + 9, y, 12, 6);
             ctx.fillRect(x + 3, y + 6, 24, 6);
             ctx.fillRect(x, y + 12, 30, 6);
-            ctx.fillRect(x + 3, y + 18, 6, 6);
-            ctx.fillRect(x + 21, y + 18, 6, 6);
             if (frame % 2 === 0) {
                 ctx.fillRect(x, y + 6, 3, 6);
                 ctx.fillRect(x + 27, y + 6, 3, 6);
@@ -402,12 +514,9 @@
         }
 
         function drawOctopusAlien(x, y, frame) {
-            ctx.fillStyle = '#00ff00';
             ctx.fillRect(x + 9, y, 12, 6);
             ctx.fillRect(x + 3, y + 6, 24, 6);
             ctx.fillRect(x, y + 12, 30, 6);
-            ctx.fillRect(x + 6, y + 18, 6, 6);
-            ctx.fillRect(x + 18, y + 18, 6, 6);
             if (frame % 2 === 0) {
                 ctx.fillRect(x + 3, y + 18, 3, 6);
                 ctx.fillRect(x + 24, y + 18, 3, 6);
@@ -421,12 +530,10 @@
             ctx.shadowColor = '#ff0000';
             ctx.shadowBlur = 15;
             
-            // UFO body
             ctx.beginPath();
             ctx.ellipse(ufo.x + 25, ufo.y + 10, 25, 10, 0, 0, Math.PI * 2);
             ctx.fill();
             
-            // Dome
             ctx.beginPath();
             ctx.ellipse(ufo.x + 25, ufo.y + 5, 12, 8, 0, Math.PI, 0);
             ctx.fill();
@@ -435,28 +542,20 @@
         }
 
         function drawBullets() {
-            // Player bullets
             ctx.fillStyle = '#ffffff';
-            ctx.shadowColor = '#ffffff';
-            ctx.shadowBlur = 10;
             playerBullets.forEach(bullet => {
                 ctx.fillRect(bullet.x, bullet.y, BULLET_WIDTH, BULLET_HEIGHT);
             });
             
-            // Alien bullets
             ctx.fillStyle = '#ff6600';
-            ctx.shadowColor = '#ff6600';
             alienBullets.forEach(bullet => {
                 ctx.fillRect(bullet.x, bullet.y, BULLET_WIDTH, BULLET_HEIGHT);
             });
-            
-            ctx.shadowBlur = 0;
         }
 
         function drawShields() {
             shields.forEach(block => {
                 if (block.health <= 0) return;
-                
                 const alpha = block.health / 3;
                 ctx.fillStyle = `rgba(0, 255, 0, ${alpha})`;
                 ctx.fillRect(block.x, block.y, block.width, block.height);
@@ -466,23 +565,7 @@
         function update() {
             frameCount++;
             
-            // Player movement
-            const speed = 5;
-            if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
-                player.x = Math.max(0, player.x - speed);
-            }
-            if (keys['ArrowRight'] || keys['d'] || keys['D']) {
-                player.x = Math.min(canvas.width - PLAYER_WIDTH, player.x + speed);
-            }
-            
-            // Player shooting
-            if (keys[' '] && frameCount - lastShot > 20) {
-                playerBullets.push({
-                    x: player.x + PLAYER_WIDTH / 2 - BULLET_WIDTH / 2,
-                    y: player.y - BULLET_HEIGHT
-                });
-                lastShot = frameCount;
-            }
+            // Player movement is handled by touch events directly updating player.x
             
             // Move player bullets
             playerBullets = playerBullets.filter(bullet => {
@@ -517,8 +600,6 @@
                     alienDirection *= -1;
                     liveAliens.forEach(alien => {
                         alien.y += 15;
-                        
-                        // Check if aliens reached bottom
                         if (alien.y + alien.height >= player.y) {
                             gameOver = true;
                             endGame();
@@ -549,13 +630,12 @@
                 }
             }
             
-            // Collision detection
-            checkCollisions();
-            
             // Check win
             if (aliens.every(a => !a.alive)) {
                 nextLevel();
             }
+            
+            checkCollisions();
         }
 
         function checkCollisions() {
@@ -572,10 +652,7 @@
                         alien.alive = false;
                         score += ALIEN_TYPES[alien.type].points * level;
                         scoreEl.textContent = score.toLocaleString();
-                        
-                        // Speed up remaining aliens
                         alienMoveInterval = Math.max(5, alienMoveInterval - 0.5);
-                        
                         return false;
                     }
                 }
@@ -591,7 +668,6 @@
                     ufo = null;
                     return false;
                 }
-                
                 return true;
             });
             
@@ -599,14 +675,12 @@
             [...playerBullets, ...alienBullets].forEach(bullet => {
                 shields.forEach(block => {
                     if (block.health <= 0) return;
-                    
                     if (bullet.x < block.x + block.width &&
                         bullet.x + BULLET_WIDTH > block.x &&
                         bullet.y < block.y + block.height &&
                         bullet.y + BULLET_HEIGHT > block.y) {
-                        
                         block.health--;
-                        bullet.y = -100; // Remove bullet
+                        bullet.y = -100;
                     }
                 });
             });
@@ -617,22 +691,19 @@
                     bullet.x + BULLET_WIDTH > player.x &&
                     bullet.y < player.y + PLAYER_HEIGHT &&
                     bullet.y + BULLET_HEIGHT > player.y) {
-                    
                     loseLife();
                     return false;
                 }
                 return true;
             });
             
-            // Aliens vs player (direct collision)
+            // Aliens vs player
             aliens.forEach(alien => {
                 if (!alien.alive) return;
-                
                 if (alien.x < player.x + PLAYER_WIDTH &&
                     alien.x + alien.width > player.x &&
                     alien.y < player.y + PLAYER_HEIGHT &&
                     alien.y + alien.height > player.y) {
-                    
                     endGame();
                 }
             });
@@ -641,11 +712,8 @@
         function loseLife() {
             lives--;
             updateLivesDisplay();
-            
             if (lives <= 0) {
                 endGame();
-            } else {
-                // Brief invincibility flash could be added here
             }
         }
 
@@ -660,13 +728,12 @@
         }
 
         function draw() {
-            // Clear
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Draw stars background
+            // Stars
             ctx.fillStyle = '#ffffff';
-            for (let i = 0; i < 50; i++) {
+            for (let i = 0; i < 30; i++) {
                 const x = (i * 47 + frameCount * 0.1) % canvas.width;
                 const y = (i * 31) % canvas.height;
                 ctx.fillRect(x, y, 1, 1);
@@ -716,18 +783,9 @@
             animationId = requestAnimationFrame(gameLoop);
         }
 
-        function togglePause() {
-            if (!gameStarted || gameOver) return;
-            
-            paused = !paused;
-            pauseOverlay.classList.toggle('hidden', !paused);
-        }
-
         function endGame() {
             gameOver = true;
-            if (animationId) {
-                cancelAnimationFrame(animationId);
-            }
+            if (animationId) cancelAnimationFrame(animationId);
             
             document.getElementById('final-score').textContent = score.toLocaleString();
             document.getElementById('final-level').textContent = level;
@@ -740,38 +798,36 @@
 
                 highScoreSection.innerHTML = `
                     <p style="font-family: var(--font-pixel); font-size: 14px; color: var(--neon-green); margin: 20px 0 10px;">NEW HIGH SCORE!</p>
-                    <p style="font-family: var(--font-pixel); font-size: 10px; color: var(--neon-cyan); margin-bottom: 15px;">ENTER INITIALS:</p>
                     <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
                         <input type="text" class="hs-input" maxlength="1" value="${savedInitials[0]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
                         <input type="text" class="hs-input" maxlength="1" value="${savedInitials[1]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
                         <input type="text" class="hs-input" maxlength="1" value="${savedInitials[2]}" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;"/>
                     </div>
-                    <button id="save-score-btn" style="font-family: var(--font-pixel); font-size: 10px; padding: 10px 20px; background: var(--neon-green); border: none; color: #000; cursor: pointer;">SAVE SCORE</button>
+                    <button id="save-score-btn" style="font-family: var(--font-pixel); font-size: 10px; padding: 10px 20px; background: var(--neon-green); border: none; color: #000; cursor: pointer;">SAVE</button>
                 `;
                 
                 const inputs = highScoreSection.querySelectorAll('.hs-input');
                 
-                // Auto-select content when focused
                 inputs.forEach((input, index) => {
-                    input.addEventListener('focus', () => input.select());
+                    input.addEventListener('focus', () => {
+                         input.select();
+                         document.body.classList.add('keyboard-open');
+                         window.scrollTo(0, 0);
+                    });
+                    input.addEventListener('blur', () => {
+                         document.body.classList.remove('keyboard-open');
+                    });
                     input.addEventListener('input', (e) => {
                         e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
-                        if (e.target.value && index < 2) {
-                            inputs[index + 1].focus();
-                        }
+                        if (e.target.value && index < 2) inputs[index + 1].focus();
                     });
                 });
-                
-                // Delayed focus to ensure DOM is ready
-                setTimeout(() => {
-                    inputs[0].focus();
-                }, 100);
                 
                 document.getElementById('save-score-btn').addEventListener('click', () => {
                     const name = Array.from(inputs).map(i => i.value || ' ').join('');
                     addHighScore(GAME_NAME, name, score);
                     highScoreEl.textContent = getTopScore(GAME_NAME).toLocaleString();
-                    highScoreSection.innerHTML = '<p style="color: var(--neon-green); margin-top: 20px; font-family: var(--font-pixel); font-size: 12px;">SCORE SAVED!</p>';
+                    highScoreSection.innerHTML = '<p style="color: var(--neon-green);">SAVED!</p>';
                 });
             }
             
@@ -781,47 +837,32 @@
         // Event listeners
         document.getElementById('start-btn').addEventListener('click', startGame);
         document.getElementById('restart-btn').addEventListener('click', startGame);
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'p' || e.key === 'P') {
-                togglePause();
-                return;
-            }
-            
-            keys[e.key] = true;
-            
-            if (e.key === ' ') {
-                e.preventDefault();
-            }
-        });
-
-        document.addEventListener('keyup', (e) => {
-            keys[e.key] = false;
-        });
-
-        // Mouse control
-        canvas.addEventListener('mousemove', (e) => {
-            if (!gameStarted || gameOver || paused) return;
-            
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            player.x = Math.max(0, Math.min(canvas.width - PLAYER_WIDTH, mouseX - PLAYER_WIDTH / 2));
+        
+        document.getElementById('got-it-btn').addEventListener('click', () => {
+             instructionsModal.classList.add('hidden');
+             localStorage.setItem('siMobileFirstPlay', 'true');
         });
         
-        // Mouse shoot
-        canvas.addEventListener('mousedown', (e) => {
-            if (!gameStarted || gameOver || paused) return;
-            if (e.button === 0 && frameCount - lastShot > 20) {
-                playerBullets.push({
-                    x: player.x + PLAYER_WIDTH / 2 - BULLET_WIDTH / 2,
-                    y: player.y - BULLET_HEIGHT
-                });
-                lastShot = frameCount;
-            }
+        // Pause/Resume interactions
+        document.getElementById('resume-btn').addEventListener('click', () => {
+            paused = false;
+            pauseOverlay.classList.add('hidden');
+        });
+        document.getElementById('quit-btn').addEventListener('click', () => {
+            window.location.href = '../index.html';
         });
 
         // Initialize
         init();
+        
+        // Pause on visibility change
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && gameStarted && !gameOver) {
+                paused = true;
+                pauseOverlay.classList.remove('hidden');
+            }
+        });
+
     </script>
 </body>
 </html>

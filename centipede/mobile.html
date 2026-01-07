@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CENTIPEDE - Retro Arcade (Mobile)</title>
+    <link rel="stylesheet" href="../shared/arcade-theme.css">
+    <style>
+        /* Mobile Specific Overrides */
+        body {
+            overflow: hidden;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            padding-top: 60px; /* Header spacing */
+            box-sizing: border-box;
+            justify-content: flex-start;
+        }
+
+        .game-title {
+            font-family: var(--font-pixel);
+            font-size: 24px;
+            color: var(--neon-orange);
+            text-shadow: 0 0 10px var(--neon-orange), 0 0 20px var(--neon-orange);
+            margin-bottom: 5px;
+            letter-spacing: 4px;
+            text-align: center;
+        }
+
+        .game-hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 350px;
+            margin-bottom: 5px;
+            font-family: var(--font-pixel);
+            font-size: 10px;
+        }
+
+        .panel-value {
+            color: var(--neon-yellow);
+            text-shadow: 0 0 5px var(--neon-yellow);
+        }
+
+        .lives-container {
+            display: flex;
+            gap: 2px;
+        }
+
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 350px;
+            /* Override shared theme */
+            min-height: auto;
+            padding: 0;
+            display: block;
+            margin-top: 100px; /* Requested margin */
+        }
+
+        #game-canvas {
+            border: 2px solid var(--neon-orange);
+            box-shadow: 
+                0 0 15px var(--neon-orange),
+                inset 0 0 20px rgba(255, 136, 0, 0.1);
+            background: #000;
+            width: 100%;
+            height: auto;
+            image-rendering: pixelated;
+        }
+
+        /* Overlay Adjustments */
+        .overlay h2 { font-size: 24px; }
+        .overlay p { font-size: 12px; }
+        .start-btn { font-size: 12px; padding: 10px 20px; }
+        
+        .back-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 8px;
+            padding: 5px 10px;
+            z-index: 2000;
+        }
+
+        /* Instructions Modal */
+        .instructions-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .instructions-modal.hidden { display: none; }
+        
+        .instruction-anim {
+            font-size: 30px;
+            margin-bottom: 20px;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        /* Keyboard Handling */
+        body.keyboard-open .game-title,
+        body.keyboard-open .game-hud,
+        body.keyboard-open .game-container canvas,
+        body.keyboard-open .back-btn {
+            display: none !important;
+        }
+        
+        body.keyboard-open .game-container {
+            margin-top: 0 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        
+        body.keyboard-open .overlay {
+            position: static;
+            background: transparent;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div class="grid-bg"></div>
+    <a href="../index.html" class="back-btn">◀ ARCADE</a>
+
+    <div class="game-wrapper">
+        <h1 class="game-title">CENTIPEDE</h1>
+
+        <div class="game-hud">
+            <div>SCORE: <span id="score" class="panel-value">0</span></div>
+            <div>LEVEL: <span id="level" class="panel-value">1</span></div>
+        </div>
+        
+        <div class="game-hud" style="justify-content: center; gap: 20px; margin-bottom: 10px;">
+             <div><span id="lives-display"></span></div>
+             <div class="high-score-display" style="font-size: 10px; color: var(--neon-yellow);">HIGH: <span id="high-score">0</span></div>
+        </div>
+
+        <div class="game-container">
+            <canvas id="game-canvas" width="350" height="400"></canvas>
+
+            <div class="overlay" id="start-overlay">
+                <h2>CENTIPEDE</h2>
+                <p>DESTROY THE BUG</p>
+                <button class="start-btn" id="start-btn">START GAME</button>
+            </div>
+
+            <div class="overlay hidden" id="pause-overlay">
+                <h2>PAUSED</h2>
+                <button class="start-btn" id="resume-btn">RESUME</button>
+                <button class="start-btn" id="quit-btn" style="margin-top: 10px; border-color: var(--neon-red); color: var(--neon-red);">QUIT</button>
+            </div>
+
+            <div class="overlay hidden" id="gameover-overlay">
+                <h2>GAME OVER</h2>
+                <p>FINAL SCORE: <span id="final-score">0</span></p>
+                <div id="high-score-section"></div>
+                <button class="start-btn" id="restart-btn">Try Again</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Instructions Modal -->
+    <div class="instructions-modal" id="instructions-modal">
+        <h2 style="font-family: var(--font-pixel); color: var(--neon-orange); margin-bottom: 30px;">HOW TO PLAY</h2>
+        
+        <div style="margin-bottom: 20px;">
+            <div class="instruction-anim">👆↔️</div>
+            <div style="font-family: var(--font-pixel); font-size: 12px; color: #fff;">
+                SLIDE TO MOVE
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+            <div class="instruction-anim">💥</div>
+            <div style="font-family: var(--font-pixel); font-size: 12px; color: #fff;">
+                TAP TO SHOOT
+            </div>
+        </div>
+        
+        <button class="start-btn" id="got-it-btn">GOT IT!</button>
+    </div>
+
+    <script type="module">
+        import { getTopScore, isHighScore, addHighScore, getTopScoreEntry } from '../shared/highscore.js';
+
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const GAME_NAME = 'centipede';
+        
+        const TILE = 15; // Smaller tiles for mobile
+        const COLS = Math.floor(canvas.width / TILE);
+        const ROWS = Math.floor(canvas.height / TILE);
+        
+        let score = 0;
+        let level = 1;
+        let lives = 3;
+        let gameStarted = false;
+        let paused = false;
+        let gameOver = false;
+        let animationId;
+        let frameCount = 0;
+        
+        let player = { x: canvas.width / 2, y: canvas.height - 30 };
+        let bullets = [];
+        let centipede = [];
+        let mushrooms = [];
+        
+        // Touch State
+        const touchState = {
+            moveId: null,
+            startX: 0,
+            startY: 0,
+            playerStartX: 0,
+            playerStartY: 0
+        };
+        
+        function initMushrooms() {
+            mushrooms = [];
+            const count = 15 + level * 4;
+            for (let i = 0; i < count; i++) {
+                const col = Math.floor(Math.random() * COLS);
+                const row = Math.floor(Math.random() * (ROWS - 6)) + 1;
+                if (!mushrooms.find(m => m.col === col && m.row === row)) {
+                    mushrooms.push({ col, row, health: 4 });
+                }
+            }
+        }
+        
+        function initCentipede() {
+            centipede = [];
+            const length = 8 + level * 2;
+            for (let i = 0; i < length; i++) {
+                centipede.push({
+                    x: (COLS - 1 - i) * TILE,
+                    y: 0,
+                    dx: -1,
+                    isHead: i === 0
+                });
+            }
+        }
+        
+        function updateLivesDisplay() {
+            const el = document.getElementById('lives-display');
+            el.innerHTML = '';
+            for (let i = 0; i < lives; i++) {
+                const icon = document.createElement('span');
+                icon.textContent = '🔫';
+                el.appendChild(icon);
+            }
+        }
+        
+        // --- INPUT HANDLING ---
+        
+        document.addEventListener('touchstart', e => {
+            if (!gameStarted || gameOver || paused) return;
+            e.preventDefault();
+            
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                if (touchState.moveId === null) {
+                    // Movement finger
+                    touchState.moveId = t.identifier;
+                    touchState.startX = t.clientX;
+                    touchState.startY = t.clientY;
+                    touchState.playerStartX = player.x;
+                    touchState.playerStartY = player.y;
+                } else {
+                    // Second finger -> Shoot
+                    shoot();
+                }
+            }
+        }, { passive: false });
+        
+        document.addEventListener('touchmove', e => {
+            if (!gameStarted || gameOver || paused) return;
+            e.preventDefault();
+            
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                if (t.identifier === touchState.moveId) {
+                    const dx = t.clientX - touchState.startX;
+                    const dy = t.clientY - touchState.startY;
+                    
+                    let newX = touchState.playerStartX + dx * 1.5; // Sensitivity
+                    let newY = touchState.playerStartY + dy * 1.5;
+                    
+                    // Clamp
+                    newX = Math.max(TILE/2, Math.min(canvas.width - TILE/2, newX));
+                    newY = Math.max(canvas.height * 0.75, Math.min(canvas.height - TILE/2, newY)); // Player restricted to bottom 25%
+                    
+                    player.x = newX;
+                    player.y = newY;
+                }
+            }
+        }, { passive: false });
+        
+        document.addEventListener('touchend', e => {
+             e.preventDefault();
+             for (let i = 0; i < e.changedTouches.length; i++) {
+                 if (e.changedTouches[i].identifier === touchState.moveId) {
+                     // If it was a quick tap (no movement), treat as shot
+                     // But hard to distinguish. Let's say if released quickly, maybe shoot?
+                     // Or just simpler: Tap anywhere = Shoot.
+                     // But we intercept move finger.
+                     // Let's rely on Multi-touch for shooting or a "Tap destroys move" mechanic?
+                     // User asked for "Tap to shoot and slide to move".
+                     // If I tap and lift, it's a shot. If I slide, it's a move.
+                     // Let's enable shooting on end if drag was minimal.
+                     const dx = e.changedTouches[i].clientX - touchState.startX;
+                     const dy = e.changedTouches[i].clientY - touchState.startY;
+                     if (Math.abs(dx) < 5 && Math.abs(dy) < 5) {
+                         shoot();
+                     }
+                     touchState.moveId = null;
+                 }
+             }
+        }, { passive: false });
+        
+        function shoot() {
+            if (bullets.length < 3) {
+                bullets.push({ x: player.x, y: player.y - 10 });
+            }
+        }
+        
+        function getMushroom(col, row) {
+            return mushrooms.find(m => m.col === col && m.row === row);
+        }
+        
+        function update() {
+            if (!gameStarted || gameOver || paused) return;
+            frameCount++;
+            
+            // Bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].y -= 10;
+                if (bullets[i].y < 0) {
+                    bullets.splice(i, 1);
+                    continue;
+                }
+                
+                // Hit Mushroom
+                const col = Math.floor(bullets[i].x / TILE);
+                const row = Math.floor(bullets[i].y / TILE);
+                const mush = getMushroom(col, row);
+                if (mush) {
+                    mush.health--;
+                    if (mush.health <= 0) {
+                        mushrooms.splice(mushrooms.indexOf(mush), 1);
+                        score += 1;
+                    }
+                    bullets.splice(i, 1);
+                    document.getElementById('score').textContent = score;
+                    continue;
+                }
+                
+                // Hit Centipede
+                for (let j = centipede.length - 1; j >= 0; j--) {
+                    const seg = centipede[j];
+                    if (Math.abs(bullets[i].x - seg.x - TILE/2) < TILE/2 && 
+                        Math.abs(bullets[i].y - seg.y - TILE/2) < TILE/2) {
+                        
+                        // New mushroom
+                        const mCol = Math.floor(seg.x / TILE);
+                        const mRow = Math.floor(seg.y / TILE);
+                        if (!getMushroom(mCol, mRow)) mushrooms.push({col: mCol, row: mRow, health: 4});
+                        
+                        score += seg.isHead ? 100 : 10;
+                        document.getElementById('score').textContent = score;
+                        
+                        if (j < centipede.length - 1) centipede[j+1].isHead = true;
+                        
+                        centipede.splice(j, 1);
+                        bullets.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+            
+            // Centipede Movement
+            if (frameCount % (15 - Math.min(level, 10)) === 0) {
+                for (let seg of centipede) {
+                    const nextX = seg.x + seg.dx * TILE;
+                    const col = Math.floor(nextX / TILE);
+                    const row = Math.floor(seg.y / TILE);
+                    
+                    if (nextX < 0 || nextX >= canvas.width || getMushroom(col, row)) {
+                        seg.dx *= -1;
+                        const nextY = seg.y + TILE;
+                        if (nextY >= canvas.height - TILE) {
+                             // At bottom? Go back up? Or loop? 
+                             // Classic just stays at bottom moving back/forth
+                             // Mobile version: Let's constrain rect.
+                             seg.y = Math.min(canvas.height - TILE * 2, nextY);
+                        } else {
+                            seg.y = nextY;
+                        }
+                    } else {
+                        seg.x = nextX;
+                    }
+                }
+            }
+            
+            // Player Collision
+            for (let seg of centipede) {
+                if (Math.abs(player.x - seg.x - TILE/2) < TILE && Math.abs(player.y - seg.y - TILE/2) < TILE) {
+                    loseLife();
+                    return;
+                }
+            }
+            
+            // Level win
+            if (centipede.length === 0) {
+                level++;
+                document.getElementById('level').textContent = level;
+                initMushrooms();
+                initCentipede();
+            }
+        }
+        
+        function loseLife() {
+            lives--;
+            updateLivesDisplay();
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 30;
+            // Clear area around player of mushrooms?
+            
+            if (lives <= 0) endGame();
+            else initCentipede(); // Reset centipede on death usually
+        }
+        
+        function draw() {
+            ctx.fillStyle = '#001100';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            if (!gameStarted) return;
+            
+            // Mushrooms
+            for (let m of mushrooms) {
+                ctx.fillStyle = `hsl(${120 - (4-m.health)*30}, 80%, ${30+m.health*10}%)`;
+                ctx.beginPath();
+                ctx.ellipse(m.col*TILE + TILE/2, m.row*TILE + TILE/3, TILE/2.5, TILE/3, 0, 0, Math.PI*2);
+                ctx.fill();
+            }
+            
+            // Centipede
+            for (let seg of centipede) {
+                ctx.fillStyle = seg.isHead ? '#ff6600' : '#ff4400';
+                ctx.beginPath();
+                ctx.arc(seg.x + TILE/2, seg.y + TILE/2, TILE/2 - 1, 0, Math.PI*2);
+                ctx.fill();
+            }
+            
+            // Player
+            ctx.fillStyle = '#00ffff';
+            ctx.beginPath();
+            ctx.moveTo(player.x, player.y - 8);
+            ctx.lineTo(player.x - 8, player.y + 8);
+            ctx.lineTo(player.x + 8, player.y + 8);
+            ctx.fill();
+            
+            // Bullets
+            ctx.fillStyle = '#fff';
+            for (let b of bullets) ctx.fillRect(b.x - 1, b.y - 4, 2, 8);
+        }
+        
+        function gameLoop() {
+            if (!gameOver && !paused) update();
+            draw();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function startGame() {
+            score = 0;
+            level = 1;
+            lives = 3;
+            gameOver = false;
+            paused = false;
+            frameCount = 0;
+            bullets = [];
+            
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 30;
+            
+            document.getElementById('score').textContent = '0';
+            updateLivesDisplay();
+            
+            initMushrooms();
+            initCentipede();
+            
+            document.getElementById('start-overlay').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.add('hidden');
+            gameStarted = true;
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function endGame() {
+            gameOver = true;
+            if (animationId) cancelAnimationFrame(animationId);
+            
+            document.getElementById('final-score').textContent = score;
+            const highScoreSection = document.getElementById('high-score-section');
+            if (isHighScore(GAME_NAME, score)) {
+                 highScoreSection.innerHTML = `
+                    <p style="color: var(--neon-green);">NEW HIGH SCORE!</p>
+                    <div style="display:flex;justify-content:center;gap:5px;margin:10px;">
+                        <input class="hs-input" maxlength="1" style="width:30px;height:40px;background:#000;color:cyan;border:1px solid cyan;text-align:center;">
+                        <input class="hs-input" maxlength="1" style="width:30px;height:40px;background:#000;color:cyan;border:1px solid cyan;text-align:center;">
+                        <input class="hs-input" maxlength="1" style="width:30px;height:40px;background:#000;color:cyan;border:1px solid cyan;text-align:center;">
+                    </div>
+                    <button id="save-score-btn" class="start-btn">SAVE</button>
+                 `;
+                 
+                 const inputs = highScoreSection.querySelectorAll('.hs-input');
+                 inputs.forEach((inp, i) => {
+                     inp.addEventListener('focus', () => { document.body.classList.add('keyboard-open'); window.scrollTo(0, 0); });
+                     inp.addEventListener('blur', () => document.body.classList.remove('keyboard-open'));
+                     inp.addEventListener('input', e => {
+                         e.target.value = e.target.value.toUpperCase();
+                         if (e.target.value && i < 2) inputs[i+1].focus();
+                     });
+                 });
+                 
+                 document.getElementById('save-score-btn').addEventListener('click', () => {
+                     const name = Array.from(inputs).map(i => i.value).join('');
+                     addHighScore(GAME_NAME, name, score);
+                     updateHS();
+                     highScoreSection.innerHTML = '<p>SAVED!</p>';
+                 });
+            }
+            document.getElementById('gameover-overlay').classList.remove('hidden');
+        }
+        
+        function updateHS() {
+            const entry = getTopScoreEntry(GAME_NAME);
+            document.getElementById('high-score').textContent = entry ? entry.score : '0';
+        }
+
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+        document.getElementById('resume-btn').addEventListener('click', () => { paused = false; document.getElementById('pause-overlay').classList.add('hidden'); });
+        document.getElementById('quit-btn').addEventListener('click', () => window.location.href = '../index.html');
+        document.getElementById('got-it-btn').addEventListener('click', () => {
+            document.getElementById('instructions-modal').classList.add('hidden');
+            localStorage.setItem('centipedeMobileFirstPlay', 'true');
+        });
+        
+        if (localStorage.getItem('centipedeMobileFirstPlay')) {
+             document.getElementById('instructions-modal').classList.add('hidden');
+        }
+        
+        updateHS();
+     </script>
+</body>
+</html>

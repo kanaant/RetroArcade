@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PONG - Retro Arcade (Mobile)</title>
+    <link rel="stylesheet" href="../shared/arcade-theme.css">
+    <style>
+        /* Mobile Specific Overrides */
+        body {
+            overflow: hidden;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            padding-top: 60px; /* Header spacing */
+            box-sizing: border-box;
+            justify-content: flex-start;
+        }
+
+        .game-title {
+            font-family: var(--font-pixel);
+            font-size: 24px;
+            color: var(--neon-pink);
+            text-shadow: var(--glow-pink);
+            margin-bottom: 5px;
+            letter-spacing: 4px;
+            text-align: center;
+        }
+
+        .game-hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 350px;
+            margin-bottom: 5px;
+            font-family: var(--font-pixel);
+        }
+
+        .player-score {
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+            font-size: 20px;
+        }
+
+        .ai-score {
+            color: var(--neon-pink);
+            text-shadow: 0 0 10px var(--neon-pink);
+            font-size: 20px;
+        }
+
+        .rally-display {
+            color: var(--neon-yellow);
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 350px; /* Mobile width constraint */
+            /* Override shared theme */
+            min-height: auto;
+            padding: 0;
+            display: block;
+            margin-top: 100px; /* Requested margin */
+        }
+
+        #game-canvas {
+            border: 4px solid var(--neon-pink);
+            box-shadow: 
+                0 0 15px var(--neon-pink),
+                inset 0 0 20px rgba(255, 0, 128, 0.1);
+            background: #000;
+            width: 100%;
+            height: auto;
+            /* Vertical aspect ratio handling in JS */
+        }
+
+        /* Overlay Adjustments */
+        .overlay h2 { font-size: 20px; }
+        .overlay p { font-size: 10px; }
+        .start-btn { font-size: 12px; padding: 10px 20px; }
+        
+        .back-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 8px;
+            padding: 5px 10px;
+            z-index: 2000;
+        }
+
+        /* Instructions Modal */
+        .instructions-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .instructions-modal.hidden { display: none; }
+        
+        .instruction-icon {
+            font-size: 40px;
+            margin-bottom: 20px;
+            color: var(--neon-cyan);
+            animation: moveHand 2s infinite;
+        }
+        
+        @keyframes moveHand {
+            0% { transform: translateX(-20px); }
+            50% { transform: translateX(20px); }
+            100% { transform: translateX(-20px); }
+        }
+
+        /* Keyboard Handling */
+        body.keyboard-open .game-title,
+        body.keyboard-open .game-hud,
+        body.keyboard-open .game-container canvas,
+        body.keyboard-open .back-btn {
+            display: none !important;
+        }
+        
+        body.keyboard-open .game-container {
+            margin-top: 0 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        
+        body.keyboard-open .overlay {
+            position: static;
+            background: transparent;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div class="grid-bg"></div>
+    <a href="../index.html" class="back-btn">◀ ARCADE</a>
+
+    <div class="game-wrapper">
+        <h1 class="game-title">PONG</h1>
+
+        <div class="game-hud">
+            <!-- Player is bottom (Cyan), AI is top (Pink) usually, but logic inverted for vertical? 
+                 Let's stick to: Player = Cyan, AI = Pink. 
+                 Scoreboard: Player Left, AI Right for simplicity -->
+            <span class="player-score" id="player-score">0</span>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <span class="rally-display">RALLY: <span id="rally-count">0</span></span>
+            </div>
+            <span class="ai-score" id="ai-score">0</span>
+        </div>
+        
+        <div class="high-score-display" style="font-size: 10px; margin-bottom: 5px; color: var(--neon-yellow);">HIGH SCORE: <span id="high-score">0</span></div>
+
+        <div class="game-container">
+            <canvas id="game-canvas" width="350" height="500"></canvas>
+
+            <div class="overlay" id="start-overlay">
+                <h2>PONG MOBILE</h2>
+                <p>FIRST TO 5 WINS!</p>
+                <button class="start-btn" id="start-btn">START GAME</button>
+            </div>
+
+            <div class="overlay hidden" id="pause-overlay">
+                <h2>PAUSED</h2>
+                <button class="start-btn" id="resume-btn">RESUME</button>
+                <button class="start-btn" id="quit-btn" style="margin-top: 10px; border-color: var(--neon-red); color: var(--neon-red);">QUIT</button>
+            </div>
+
+            <div class="overlay hidden" id="gameover-overlay">
+                <h2 id="winner-text">PLAYER WINS!</h2>
+                <p>FINAL SCORE: <span id="final-score">5 - 0</span></p>
+                <div id="high-score-section"></div>
+                <button class="start-btn" id="restart-btn">PLAY AGAIN</button>
+            </div>
+
+            <div class="overlay hidden" id="score-overlay" style="background: transparent;">
+                <h2 id="scorer-text" style="font-size: 16px; text-shadow: 0 0 5px white;">POINT!</h2>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Instructions Modal -->
+    <div class="instructions-modal" id="instructions-modal">
+        <h2 style="font-family: var(--font-pixel); color: var(--neon-cyan); margin-bottom: 30px;">HOW TO PLAY</h2>
+        <div class="instruction-icon">👆↔️</div>
+        <p style="font-family: var(--font-pixel); font-size: 12px; color: #fff; line-height: 1.6; margin-bottom: 30px;">
+            DRAG YOUR FINGER<br>LEFT AND RIGHT<br>TO MOVE PADDLE
+        </p>
+        <button class="start-btn" id="got-it-btn">GOT IT!</button>
+    </div>
+
+    <script type="module">
+        import { getTopScore, isHighScore, addHighScore, createHighScoreInput } from '../shared/highscore.js';
+
+        const GAME_NAME = 'pong';
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game constants (Vertical Orientation)
+        const PADDLE_WIDTH = 80;  // Wider for vertical play
+        const PADDLE_HEIGHT = 15;
+        const BALL_SIZE = 12;
+        const WINNING_SCORE = 5;
+
+        // Game state
+        // Player 1 = Bottom (You)
+        // Player 2 = Top (AI)
+        let player1 = { x: 0, score: 0 }; 
+        let player2 = { x: 0, score: 0 };
+        let ball = { x: 0, y: 0, dx: 0, dy: 0, speed: 5 };
+        
+        let gameOver = false;
+        let paused = false;
+        let gameStarted = false;
+        let serving = true;
+        let rallyCount = 0;
+        let maxRally = 0;
+        let animationId = null;
+        
+        // AI settings
+        const AI_SPEED = 3.5;
+        const AI_REACTION = 0.08;
+
+        // DOM elements
+        const playerScoreEl = document.getElementById('player-score');
+        const aiScoreEl = document.getElementById('ai-score');
+        const rallyCountEl = document.getElementById('rally-count');
+        const highScoreEl = document.getElementById('high-score');
+        const startOverlay = document.getElementById('start-overlay');
+        const pauseOverlay = document.getElementById('pause-overlay');
+        const gameoverOverlay = document.getElementById('gameover-overlay');
+        const scoreOverlay = document.getElementById('score-overlay');
+        const instructionsModal = document.getElementById('instructions-modal');
+
+        function init() {
+            highScoreEl.textContent = getTopScore(GAME_NAME).toLocaleString();
+            resetPositions();
+            
+            if (localStorage.getItem('pongMobileFirstPlay')) {
+                instructionsModal.classList.add('hidden');
+            }
+        }
+        
+        function resetPositions() {
+            // Center paddles horizontally
+            player1.x = canvas.width / 2 - PADDLE_WIDTH / 2;
+            player2.x = canvas.width / 2 - PADDLE_WIDTH / 2;
+            resetBall();
+        }
+
+        function resetBall() {
+            ball.x = canvas.width / 2 - BALL_SIZE / 2;
+            ball.y = canvas.height / 2 - BALL_SIZE / 2;
+            ball.speed = 5 + Math.min(player1.score + player2.score, 10) * 0.3;
+            rallyCount = 0;
+            updateRallyDisplay();
+            
+            // Serve vertically
+            // Random direction left/right, serve towards loser or random
+            const angle = (Math.random() - 0.5) * Math.PI / 3; // +/- 30 degrees from vertical? No, from horizontal.
+            
+            // New vertical logic: 
+            // We want dy to be significant.
+            // Angle should be close to +/- 90 degrees (vertical).
+            // Let's implement manually:
+            ball.dx = (Math.random() - 0.5) * 4; // Slight horizontal drift
+            ball.dy = (Math.random() > 0.5 ? 1 : -1) * ball.speed; // Up or Down
+            
+            serving = true;
+            setTimeout(() => serving = false, 1000);
+        }
+
+        // --- TOUCH INPUT ---
+        let isDragging = false;
+        
+        document.addEventListener('touchstart', (e) => {
+             // Simple tap anywhere to start tracking relative motion?
+             // Or absolute mapping? Absolute mapping usually feels better for paddle games if screen width is 1:1.
+             // Since canvas max-width is 350, it's close to screen width.
+             // Let's try direct mapping first (touch X = paddle center X).
+             handleInput(e.touches[0].clientX);
+             isDragging = true;
+        }, { passive: false });
+        
+        document.addEventListener('touchmove', (e) => {
+             if (isDragging) {
+                 e.preventDefault(); // Prevent scroll
+                 handleInput(e.touches[0].clientX);
+             }
+        }, { passive: false });
+        
+        document.addEventListener('touchend', () => isDragging = false);
+
+        function handleInput(clientX) {
+            if (!gameStarted || paused || gameOver) return;
+            
+            // Get canvas boundaries/scale
+            const rect = canvas.getBoundingClientRect();
+            // Scale logic if canvas display size != internal size
+            const scaleX = canvas.width / rect.width;
+            
+            const touchX = (clientX - rect.left) * scaleX;
+            
+            // Center paddle on finger
+            let newX = touchX - PADDLE_WIDTH / 2;
+            
+            // Clamp
+            newX = Math.max(0, Math.min(canvas.width - PADDLE_WIDTH, newX));
+            
+            player1.x = newX;
+        }
+
+        function update() {
+            if (serving) return;
+            
+            // Move Ball
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+            
+            // Wall Collisions (Left/Right)
+            if (ball.x <= 0 || ball.x + BALL_SIZE >= canvas.width) {
+                ball.dx = -ball.dx;
+                ball.x = Math.max(0, Math.min(canvas.width - BALL_SIZE, ball.x));
+            }
+            
+            // AI Movement (Top Paddle)
+            updateAI();
+            
+            // Paddle Collisions
+            
+            // Player 1 (Bottom) - y approx 470
+            const p1Y = canvas.height - 30;
+            if (ball.y + BALL_SIZE >= p1Y && 
+                ball.y <= p1Y + PADDLE_HEIGHT &&
+                ball.x + BALL_SIZE >= player1.x && 
+                ball.x <= player1.x + PADDLE_WIDTH) {
+                
+                // Hit Player Paddle
+                ball.dy = -Math.abs(ball.dy); // Force Up
+                ball.speed = Math.min(12, ball.speed * 1.05);
+                
+                // Add horizontal spin based on hit position
+                const hitPos = (ball.x + BALL_SIZE / 2 - player1.x) / PADDLE_WIDTH; // 0 to 1
+                const angleOffset = (hitPos - 0.5) * 8; // -4 to +4 dx change
+                ball.dx += angleOffset;
+                
+                rallyCount++;
+                if (rallyCount > maxRally) maxRally = rallyCount;
+                updateRallyDisplay();
+            }
+            
+            // Player 2 (Top AI) - y approx 15
+            const p2Y = 15;
+            if (ball.y <= p2Y + PADDLE_HEIGHT && 
+                ball.y + BALL_SIZE >= p2Y &&
+                ball.x + BALL_SIZE >= player2.x && 
+                ball.x <= player2.x + PADDLE_WIDTH) {
+                
+                // Hit AI Paddle
+                ball.dy = Math.abs(ball.dy); // Force Down
+                ball.speed = Math.min(12, ball.speed * 1.05);
+                
+                // Add horizontal spin
+                const hitPos = (ball.x + BALL_SIZE / 2 - player2.x) / PADDLE_WIDTH;
+                const angleOffset = (hitPos - 0.5) * 8;
+                ball.dx += angleOffset;
+                
+                rallyCount++;
+                if (rallyCount > maxRally) maxRally = rallyCount;
+                updateRallyDisplay();
+            }
+            
+            // Scoring (Top/Bottom)
+            if (ball.y < 0) {
+                // Ball passed top -> Player Wins Point
+                player1.score++;
+                showScoreOverlay("YOU SCORE!");
+                if (player1.score >= WINNING_SCORE) endGame();
+                else resetBall();
+            } else if (ball.y > canvas.height) {
+                // Ball passed bottom -> AI Wins Point
+                player2.score++;
+                showScoreOverlay("AI SCORES!");
+                if (player2.score >= WINNING_SCORE) endGame();
+                else resetBall();
+            }
+            
+            updateScoreDisplay();
+        }
+        
+        function updateAI() {
+            // AI follows ball X
+            const targetX = ball.x + BALL_SIZE / 2 - PADDLE_WIDTH / 2;
+            const diff = targetX - player2.x;
+            
+            // Simple ease-in
+            if (Math.abs(diff) > 2) {
+                player2.x += Math.sign(diff) * Math.min(Math.abs(diff), AI_SPEED);
+            }
+            
+            // Clamp AI
+            player2.x = Math.max(0, Math.min(canvas.width - PADDLE_WIDTH, player2.x));
+        }
+
+        function showScoreOverlay(text) {
+            document.getElementById('scorer-text').textContent = text;
+            scoreOverlay.classList.remove('hidden');
+            setTimeout(() => scoreOverlay.classList.add('hidden'), 1000);
+        }
+
+        function updateScoreDisplay() {
+            playerScoreEl.textContent = player1.score;
+            aiScoreEl.textContent = player2.score;
+        }
+
+        function updateRallyDisplay() {
+            rallyCountEl.textContent = rallyCount;
+        }
+
+        function draw() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Center Line (Horizontal now)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.setLineDash([10, 10]);
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height / 2);
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Paddles
+            // Player 1 (Bottom) - Cyan
+            ctx.fillStyle = '#00ffff';
+            ctx.shadowColor = '#00ffff';
+            ctx.shadowBlur = 15;
+            ctx.fillRect(player1.x, canvas.height - 30, PADDLE_WIDTH, PADDLE_HEIGHT);
+            
+            // Player 2 (Top) - Pink
+            ctx.fillStyle = '#ff00ff';
+            ctx.shadowColor = '#ff00ff';
+            ctx.fillRect(player2.x, 15, PADDLE_WIDTH, PADDLE_HEIGHT);
+            
+            ctx.shadowBlur = 0;
+            
+            // Ball
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(ball.x + BALL_SIZE/2, ball.y + BALL_SIZE/2, BALL_SIZE/2, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        function gameLoop() {
+            if (gameOver) return;
+            if (!paused) update();
+            draw();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            player1.score = 0;
+            player2.score = 0;
+            gameOver = false;
+            paused = false;
+            
+            resetPositions();
+            updateScoreDisplay();
+            
+            startOverlay.classList.add('hidden');
+            gameoverOverlay.classList.add('hidden');
+            gameStarted = true;
+            
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function endGame() {
+            gameOver = true;
+            if (animationId) cancelAnimationFrame(animationId);
+            
+            const winner = player1.score >= WINNING_SCORE ? 'YOU WIN!' : 'AI WINS!';
+            document.getElementById('winner-text').textContent = winner;
+            document.getElementById('final-score').textContent = `${player1.score} - ${player2.score}`;
+            
+            // High score handling (Rally count)
+            const score = maxRally;
+            const highScoreSection = document.getElementById('high-score-section');
+            
+            if (isHighScore(GAME_NAME, score)) {
+                 highScoreSection.innerHTML = `
+                    <p style="font-family: var(--font-pixel); font-size: 14px; color: var(--neon-green); margin: 20px 0 10px;">NEW RALLY RECORD!</p>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
+                        <input type="text" class="hs-input" maxlength="1" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;">
+                        <input type="text" class="hs-input" maxlength="1" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;">
+                        <input type="text" class="hs-input" maxlength="1" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;">
+                    </div>
+                    <button id="save-score-btn" class="start-btn" style="background: var(--neon-green); color: black;">SAVE</button>
+                 `;
+                 
+                 // Keyboard handling for inputs (same as Space Invaders)
+                 const inputs = highScoreSection.querySelectorAll('.hs-input');
+                 inputs.forEach((input, i) => {
+                     input.addEventListener('focus', () => {
+                         input.select();
+                         document.body.classList.add('keyboard-open');
+                         window.scrollTo(0, 0);
+                     });
+                     input.addEventListener('blur', () => document.body.classList.remove('keyboard-open'));
+                     input.addEventListener('input', (e) => {
+                        e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                        if (e.target.value && i < 2) inputs[i + 1].focus();
+                     });
+                 });
+                 
+                 document.getElementById('save-score-btn').addEventListener('click', () => {
+                      const name = Array.from(inputs).map(i => i.value || ' ').join('');
+                      addHighScore(GAME_NAME, name, score);
+                      highScoreEl.textContent = getTopScore(GAME_NAME).toLocaleString();
+                      highScoreSection.innerHTML = '<p style="color: var(--neon-green);">SAVED!</p>';
+                 });
+            }
+            
+            gameoverOverlay.classList.remove('hidden');
+        }
+
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+        document.getElementById('resume-btn').addEventListener('click', () => {
+            paused = false;
+            pauseOverlay.classList.add('hidden');
+        });
+        document.getElementById('quit-btn').addEventListener('click', () => window.location.href = '../index.html');
+        document.getElementById('got-it-btn').addEventListener('click', () => {
+            instructionsModal.classList.add('hidden');
+            localStorage.setItem('pongMobileFirstPlay', 'true');
+        });
+
+        init();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TRON - Retro Arcade (Mobile)</title>
+    <link rel="stylesheet" href="../shared/arcade-theme.css">
+    <style>
+        /* Mobile Specific Overrides */
+        body {
+            overflow: hidden;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            padding-top: 60px; /* Header spacing */
+            box-sizing: border-box;
+            justify-content: flex-start;
+        }
+
+        .game-title {
+            font-family: var(--font-pixel);
+            font-size: 24px;
+            color: var(--neon-cyan);
+            text-shadow: var(--glow-cyan);
+            margin-bottom: 5px;
+            letter-spacing: 4px;
+            text-align: center;
+        }
+
+        .game-hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 350px;
+            margin-bottom: 5px;
+            font-family: var(--font-pixel);
+            font-size: 10px;
+        }
+
+        .panel-value {
+            color: var(--neon-yellow);
+            text-shadow: 0 0 5px var(--neon-yellow);
+        }
+
+        .lives-container {
+            display: flex;
+            gap: 2px;
+        }
+
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 350px;
+            /* Override shared theme */
+            min-height: auto;
+            padding: 0;
+            display: block;
+            margin-top: 100px; /* Requested margin */
+        }
+
+        #game-canvas {
+            border: 2px solid var(--neon-purple);
+            box-shadow: 
+                0 0 15px var(--neon-purple),
+                inset 0 0 20px rgba(170, 0, 255, 0.1);
+            background: #000;
+            width: 100%;
+            height: auto;
+            image-rendering: pixelated;
+        }
+
+        /* Overlay Adjustments */
+        .overlay h2 { font-size: 24px; }
+        .overlay p { font-size: 12px; }
+        .start-btn { font-size: 12px; padding: 10px 20px; }
+        
+        .back-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 8px;
+            padding: 5px 10px;
+            z-index: 2000;
+        }
+
+        /* Instructions Modal */
+        .instructions-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .instructions-modal.hidden { display: none; }
+        
+        .instruction-icon {
+            font-size: 40px;
+            margin-bottom: 20px;
+            color: var(--neon-cyan);
+            animation: swipeAnim 2s infinite;
+        }
+        
+        @keyframes swipeAnim {
+            0% { transform: translateY(0); }
+            25% { transform: translateY(-10px); }
+            50% { transform: translateY(0); }
+            75% { transform: translateX(10px); }
+            100% { transform: translateY(0); }
+        }
+
+        /* Keyboard Handling */
+        body.keyboard-open .game-title,
+        body.keyboard-open .game-hud,
+        body.keyboard-open .game-container canvas,
+        body.keyboard-open .back-btn {
+            display: none !important;
+        }
+        
+        body.keyboard-open .game-container {
+            margin-top: 0 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        
+        body.keyboard-open .overlay {
+            position: static;
+            background: transparent;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div class="grid-bg"></div>
+    <a href="../index.html" class="back-btn">◀ ARCADE</a>
+
+    <div class="game-wrapper">
+        <h1 class="game-title">TRON</h1>
+
+        <div class="game-hud">
+            <div>TIME: <span id="timer" class="panel-value">0:00</span></div>
+            <div>LIVES: <span id="lives-display"></span></div>
+        </div>
+        
+        <div class="game-hud" style="justify-content: center; gap: 20px; margin-bottom: 10px;">
+             <div>TOTAL: <span id="total-time" class="panel-value">0:00</span></div>
+             <div class="high-score-display" style="font-size: 10px; color: var(--neon-yellow);">HIGH: <span id="high-score">0:00</span></div>
+        </div>
+
+        <div class="game-container">
+            <canvas id="game-canvas" width="350" height="350"></canvas>
+
+            <div class="overlay" id="start-overlay">
+                <h2>TRON</h2>
+                <p>SURVIVE THE GRID</p>
+                <button class="start-btn" id="start-btn">ENTER GRID</button>
+            </div>
+
+            <div class="overlay hidden" id="pause-overlay">
+                <h2>PAUSED</h2>
+                <button class="start-btn" id="resume-btn">RESUME</button>
+                <button class="start-btn" id="quit-btn" style="margin-top: 10px; border-color: var(--neon-red); color: var(--neon-red);">QUIT</button>
+            </div>
+            
+            <div class="overlay hidden" id="crash-overlay">
+                <h2 id="crash-text">CRASHED!</h2>
+                <p>ROUND TIME: <span id="round-time">0:00</span></p>
+                <p>NEXT ROUND IN <span id="countdown" style="color: var(--neon-yellow); font-size: 20px;">3</span></p>
+            </div>
+
+            <div class="overlay hidden" id="gameover-overlay">
+                <h2>GAME OVER</h2>
+                <p>TOTAL TIME: <span id="final-time">0:00</span></p>
+                <div id="high-score-section"></div>
+                <button class="start-btn" id="restart-btn">Try Again</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Instructions Modal -->
+    <div class="instructions-modal" id="instructions-modal">
+        <h2 style="font-family: var(--font-pixel); color: var(--neon-cyan); margin-bottom: 30px;">HOW TO PLAY</h2>
+        <div class="instruction-icon">👆</div>
+        <p style="font-family: var(--font-pixel); font-size: 12px; color: #fff; line-height: 1.6; margin-bottom: 30px;">
+            SWIPE IN ANY DIRECTION<br>TO TURN YOUR LIGHT CYCLE
+        </p>
+        <button class="start-btn" id="got-it-btn">GOT IT!</button>
+    </div>
+
+    <script type="module">
+        import { getTopScore, isHighScore, addHighScore, getTopScoreEntry } from '../shared/highscore.js';
+
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const GAME_NAME = 'tron';
+        
+        const CELL_SIZE = 5; // Slightly larger for mobile visibility? Or same for density
+        const GRID_W = canvas.width / CELL_SIZE;
+        const GRID_H = canvas.height / CELL_SIZE;
+        
+        let lives = 5;
+        let gameStarted = false;
+        let paused = false;
+        let gameOver = false;
+        let roundOver = false;
+        let animationId;
+        
+        let roundStartTime = 0;
+        let currentRoundTime = 0;
+        let totalTime = 0;
+        
+        let player, cpu;
+        let grid = [];
+        
+        const PLAYER_COLOR = '#00ffff';
+        const CPU_COLOR = '#ff6600';
+        
+        // Touch handling
+        let touchStartX = 0;
+        let touchStartY = 0;
+        
+        function initGrid() {
+            grid = new Array(GRID_W * GRID_H).fill(0);
+        }
+        
+        function initPlayers() {
+            player = {
+                x: Math.floor(GRID_W * 0.25),
+                y: Math.floor(GRID_H / 2),
+                dx: 1, dy: 0,
+                trail: [], alive: true
+            };
+            
+            cpu = {
+                x: Math.floor(GRID_W * 0.75),
+                y: Math.floor(GRID_H / 2),
+                dx: -1, dy: 0,
+                trail: [], alive: true
+            };
+        }
+        
+        document.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, { passive: false });
+        
+        document.addEventListener('touchend', e => {
+            if (!gameStarted || gameOver || paused || roundOver) return;
+            
+            const touchEndX = e.changedTouches[0].screenX;
+            const touchEndY = e.changedTouches[0].screenY;
+            
+            const dx = touchEndX - touchStartX;
+            const dy = touchEndY - touchStartY;
+            
+            if (Math.abs(dx) > Math.abs(dy)) {
+                // Horizontal
+                if (Math.abs(dx) > 20) { // Threshold
+                    const newDx = dx > 0 ? 1 : -1;
+                    if (player.dx !== -newDx) { // Prevent 180 turn
+                        player.dx = newDx;
+                        player.dy = 0;
+                    }
+                }
+            } else {
+                // Vertical
+                if (Math.abs(dy) > 20) {
+                    const newDy = dy > 0 ? 1 : -1;
+                    if (player.dy !== -newDy) {
+                        player.dx = 0;
+                        player.dy = newDy;
+                    }
+                }
+            }
+        }, { passive: false });
+
+        function isCollision(x, y) {
+            if (x < 0 || x >= GRID_W || y < 0 || y >= GRID_H) return true;
+            return grid[y * GRID_W + x] !== 0;
+        }
+        
+        function countOpenSpace(startX, startY, dx, dy, maxDepth) {
+            let count = 0;
+            let x = startX;
+            let y = startY;
+            for (let i = 0; i < maxDepth; i++) {
+                x += dx;
+                y += dy;
+                if (isCollision(x, y)) break;
+                count++;
+            }
+            return count;
+        }
+        
+        function updateAI() {
+            const directions = [
+                { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
+                { dx: -1, dy: 0 }, { dx: 1, dy: 0 }
+            ];
+            
+            const validDirs = directions.filter(d => !(d.dx === -cpu.dx && d.dy === -cpu.dy));
+            
+            let bestDir = { dx: cpu.dx, dy: cpu.dy };
+            let bestScore = -Infinity;
+            
+            for (let dir of validDirs) {
+                const nextX = cpu.x + dir.dx;
+                const nextY = cpu.y + dir.dy;
+                if (isCollision(nextX, nextY)) continue;
+                
+                let score = countOpenSpace(nextX, nextY, dir.dx, dir.dy, 30) * 2;
+                
+                if (dir.dx !== 0) {
+                    score += countOpenSpace(nextX, nextY, 0, 1, 15);
+                    score += countOpenSpace(nextX, nextY, 0, -1, 15);
+                } else {
+                    score += countOpenSpace(nextX, nextY, 1, 0, 15);
+                    score += countOpenSpace(nextX, nextY, -1, 0, 15);
+                }
+                
+                // Add randomness
+                score += Math.random() * 5;
+                
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestDir = dir;
+                }
+            }
+            
+            if (bestScore > -Infinity) {
+                cpu.dx = bestDir.dx;
+                cpu.dy = bestDir.dy;
+            }
+        }
+        
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function updateLivesDisplay() {
+            const el = document.getElementById('lives-display');
+            el.innerHTML = '';
+            for (let i = 0; i < lives; i++) {
+                const icon = document.createElement('span');
+                icon.textContent = '🏍️';
+                el.appendChild(icon);
+            }
+        }
+        
+        function update() {
+            if (!gameStarted || gameOver || paused || roundOver) return;
+            
+            currentRoundTime = (performance.now() - roundStartTime) / 1000;
+            document.getElementById('timer').textContent = formatTime(currentRoundTime);
+            document.getElementById('total-time').textContent = formatTime(totalTime + currentRoundTime);
+            
+            if (Math.random() < 0.2) updateAI();
+            
+            // Move
+            player.x += player.dx;
+            player.y += player.dy;
+            cpu.x += cpu.dx;
+            cpu.y += cpu.dy;
+            
+            const playerHit = isCollision(player.x, player.y);
+            const cpuHit = isCollision(cpu.x, cpu.y);
+            
+            if (playerHit) {
+                totalTime += currentRoundTime;
+                endRound(false);
+            } else if (cpuHit) {
+                totalTime += currentRoundTime;
+                endRound(true);
+            }
+            
+            // Trails
+            if (!playerHit && player.alive) {
+                grid[player.y * GRID_W + player.x] = 1;
+                player.trail.push({x: player.x, y: player.y});
+            }
+            if (!cpuHit && cpu.alive) {
+                grid[cpu.y * GRID_W + cpu.x] = 2;
+                cpu.trail.push({x: cpu.x, y: cpu.y});
+            }
+        }
+        
+        function endRound(playerWon) {
+            roundOver = true;
+            document.getElementById('round-time').textContent = formatTime(currentRoundTime);
+            
+            document.getElementById('crash-text').textContent = playerWon ? 'YOU WIN!' : 'CRASHED!';
+            if (!playerWon) {
+                lives--;
+                updateLivesDisplay();
+            }
+            
+            document.getElementById('crash-overlay').classList.remove('hidden');
+            
+            if (lives <= 0) {
+                setTimeout(() => {
+                    document.getElementById('crash-overlay').classList.add('hidden');
+                    endGame();
+                }, 1500);
+            } else {
+                let count = 3;
+                document.getElementById('countdown').textContent = count;
+                const intv = setInterval(() => {
+                    count--;
+                    document.getElementById('countdown').textContent = count;
+                    if (count <= 0) {
+                        clearInterval(intv);
+                        document.getElementById('crash-overlay').classList.add('hidden');
+                        startRound();
+                    }
+                }, 1000);
+            }
+        }
+        
+        function startRound() {
+            roundOver = false;
+            currentRoundTime = 0;
+            roundStartTime = performance.now();
+            initGrid();
+            initPlayers();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function draw() {
+            ctx.fillStyle = '#0a0a15';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            if (!gameStarted) return;
+            
+            // Trails
+            ctx.fillStyle = PLAYER_COLOR;
+            for (let p of player.trail) ctx.fillRect(p.x * CELL_SIZE, p.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+            
+            ctx.fillStyle = CPU_COLOR;
+            for (let p of cpu.trail) ctx.fillRect(p.x * CELL_SIZE, p.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+            
+            // Heads
+            ctx.fillStyle = '#fff';
+            if (player.alive) ctx.fillRect(player.x * CELL_SIZE, player.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+            if (cpu.alive) ctx.fillRect(cpu.x * CELL_SIZE, cpu.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        }
+        
+        let lastUpdate = 0;
+        const UPDATE_INTERVAL = 40;
+        
+        function gameLoop(time) {
+            if (time - lastUpdate >= UPDATE_INTERVAL) {
+                update();
+                lastUpdate = time;
+            }
+            draw();
+            if (!gameOver && !roundOver) animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function startGame() {
+            lives = 5;
+            totalTime = 0;
+            gameOver = false;
+            paused = false;
+            
+            updateLivesDisplay();
+            document.getElementById('total-time').textContent = '0:00';
+            document.getElementById('start-overlay').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.add('hidden');
+            gameStarted = true;
+            startRound();
+        }
+        
+        function endGame() {
+            gameOver = true;
+            if (animationId) cancelAnimationFrame(animationId);
+            
+            document.getElementById('final-time').textContent = formatTime(totalTime);
+            const score = Math.floor(totalTime * 10);
+            
+            const highScoreSection = document.getElementById('high-score-section');
+            if (isHighScore(GAME_NAME, score)) {
+                 highScoreSection.innerHTML = `
+                    <p style="color: var(--neon-green);">NEW HIGH SCORE!</p>
+                    <div style="display:flex;justify-content:center;gap:5px;margin:10px;">
+                        <input class="hs-input" maxlength="1" style="width:30px;height:40px;background:#000;color:cyan;border:1px solid cyan;text-align:center;">
+                        <input class="hs-input" maxlength="1" style="width:30px;height:40px;background:#000;color:cyan;border:1px solid cyan;text-align:center;">
+                        <input class="hs-input" maxlength="1" style="width:30px;height:40px;background:#000;color:cyan;border:1px solid cyan;text-align:center;">
+                    </div>
+                    <button id="save-score-btn" class="start-btn">SAVE</button>
+                 `;
+                 
+                 const inputs = highScoreSection.querySelectorAll('.hs-input');
+                 inputs.forEach((inp, i) => {
+                     inp.addEventListener('focus', () => { document.body.classList.add('keyboard-open'); window.scrollTo(0,0); });
+                     inp.addEventListener('blur', () => document.body.classList.remove('keyboard-open'));
+                     inp.addEventListener('input', e => {
+                         e.target.value = e.target.value.toUpperCase();
+                         if (e.target.value && i < 2) inputs[i+1].focus();
+                     });
+                 });
+                 
+                 document.getElementById('save-score-btn').addEventListener('click', () => {
+                     const name = Array.from(inputs).map(i => i.value).join('');
+                     addHighScore(GAME_NAME, name, score);
+                     updateHS();
+                     highScoreSection.innerHTML = '<p>SAVED!</p>';
+                 });
+            }
+            document.getElementById('gameover-overlay').classList.remove('hidden');
+        }
+        
+        function updateHS() {
+            const entry = getTopScoreEntry(GAME_NAME);
+            if (entry) {
+                document.getElementById('high-score').textContent = formatTime(entry.score / 10);
+            }
+        }
+
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+        document.getElementById('resume-btn').addEventListener('click', () => { paused = false; document.getElementById('pause-overlay').classList.add('hidden'); animationId = requestAnimationFrame(gameLoop); });
+        document.getElementById('quit-btn').addEventListener('click', () => window.location.href = '../index.html');
+        document.getElementById('got-it-btn').addEventListener('click', () => {
+            document.getElementById('instructions-modal').classList.add('hidden');
+            localStorage.setItem('tronMobileFirstPlay', 'true');
+        });
+
+        if (localStorage.getItem('tronMobileFirstPlay')) {
+             document.getElementById('instructions-modal').classList.add('hidden');
+        }
+
+        updateHS();
+    </script>
+</body>
+</html>

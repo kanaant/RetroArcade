@@ -252,6 +252,11 @@
     </div>
 
     <script type="module">
+        // Mobile detection and redirect
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            window.location.href = 'mobile.html';
+        }
+
         import { getTopScore, isHighScore, addHighScore, createHighScoreInput } from '../shared/highscore.js';
 
         const GAME_NAME = 'pong';

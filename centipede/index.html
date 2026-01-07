@@ -204,6 +204,11 @@
     </div>
 
     <script type="module">
+        // Mobile detection and redirect
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            window.location.href = 'mobile.html';
+        }
+
         import { getTopScore, isHighScore, addHighScore, getTopScoreEntry } from '../shared/highscore.js';
 
         const canvas = document.getElementById('game-canvas');
