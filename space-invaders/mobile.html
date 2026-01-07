@@ -332,6 +332,10 @@
         // --- TOUCH CONTROLS ---
         
         function handleTouchStart(e) {
+            // Allow UI interaction
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
+                return;
+            }
             e.preventDefault();
             
             for (let i = 0; i < e.changedTouches.length; i++) {
@@ -352,6 +356,10 @@
         }
         
         function handleTouchMove(e) {
+            // Allow UI interaction
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
+                return;
+            }
             e.preventDefault();
             
             if (!gameStarted || paused || gameOver) return;
@@ -373,6 +381,10 @@
         }
         
         function handleTouchEnd(e) {
+            // Allow UI interaction
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
+                return;
+            }
             e.preventDefault();
             
             for (let i = 0; i < e.changedTouches.length; i++) {

@@ -625,6 +625,10 @@
         document.addEventListener('touchend', handleTouchEnd, { passive: true });
 
         document.addEventListener('touchmove', (e) => {
+            // Allow UI interaction
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
+                return;
+            }
             if (gameStarted && !gameOver) {
                 e.preventDefault();
             }

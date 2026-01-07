@@ -917,6 +917,10 @@
         }
 
         function handleTouchMove(e) {
+            // Allow UI interaction
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
+                return;
+            }
             if (!gameStarted || gameOver || paused) return;
             e.preventDefault();
             
@@ -973,7 +977,12 @@
         gameBoard.addEventListener('touchend', handleTouchEnd, { passive: true });
 
         // Prevent default touch behaviors on the whole document
+        // Prevent default touch behaviors on the whole document
         document.addEventListener('touchmove', (e) => {
+            // Allow UI interaction
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
+                return;
+            }
             if (gameStarted && !gameOver) {
                 e.preventDefault();
             }

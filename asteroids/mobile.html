@@ -2,96 +2,123 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASTEROIDS - Retro Arcade</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ASTEROIDS - Retro Arcade (Mobile)</title>
     <link rel="stylesheet" href="../shared/arcade-theme.css">
-    <link rel="icon" type="image/png" href="../favicon.png">
     <style>
+        * {
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        html, body {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
         .game-wrapper {
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
-            padding: 20px;
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            padding-top: 60px;
+            box-sizing: border-box;
+            justify-content: flex-start;
+        }
+
+        /* Keyboard open state */
+        body.keyboard-open .game-title,
+        body.keyboard-open .game-hud,
+        body.keyboard-open .controls-area,
+        body.keyboard-open .back-btn {
+            display: none !important;
+        }
+        
+        body.keyboard-open .game-wrapper {
+            justify-content: center;
+        }
+
+        body.keyboard-open #gameover-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: flex-start;
+            padding-top: 20px;
+            background: #000;
+            z-index: 9999;
         }
 
         .game-title {
             font-family: var(--font-pixel);
-            font-size: 32px;
+            font-size: 24px;
             color: var(--neon-cyan);
             text-shadow: var(--glow-cyan);
-            margin-bottom: 20px;
-            letter-spacing: 4px;
+            margin-bottom: 5px;
+            letter-spacing: 2px;
+            margin-top: 5px;
         }
 
-        .game-layout {
+        .game-hud {
             display: flex;
-            gap: 30px;
-            align-items: flex-start;
-        }
-
-        /* Side Panel */
-        .side-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            min-width: 120px;
-        }
-
-        .panel-box {
-            background: rgba(0, 0, 0, 0.7);
-            border: 2px solid var(--neon-cyan);
-            padding: 15px;
-            text-align: center;
-            box-shadow: 0 0 10px var(--neon-cyan);
-        }
-
-        .panel-label {
+            justify-content: space-between;
+            width: 100%;
+            max-width: 380px;
+            margin-bottom: 5px;
             font-family: var(--font-pixel);
             font-size: 10px;
-            color: var(--neon-cyan);
-            margin-bottom: 10px;
         }
 
-        .panel-value {
-            font-family: var(--font-pixel);
-            font-size: 16px;
-            color: var(--neon-yellow);
-            text-shadow: 0 0 10px var(--neon-yellow);
+        .hud-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
         }
 
-        /* Lives Display */
+        .panel-label { color: var(--neon-cyan); font-size: 8px; }
+        .panel-value { color: var(--neon-yellow); font-size: 12px; text-shadow: 0 0 5px var(--neon-yellow); }
+
         .lives-container {
             display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 10px;
+            gap: 5px;
         }
 
         .life-icon {
             width: 0;
             height: 0;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-bottom: 16px solid var(--neon-cyan);
-            filter: drop-shadow(0 0 5px var(--neon-cyan));
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 12px solid var(--neon-cyan);
         }
 
-        /* Game Canvas Container */
-        .game-canvas-container {
+        .game-container {
             position: relative;
+            width: 100%;
+            max-width: 380px;
+            min-height: auto;
+            padding: 0;
+            display: block;
+            margin-top: 10px;
         }
 
         #game-canvas {
-            display: block;
-            background: rgba(0, 0, 0, 0.9);
-            border: 4px solid var(--neon-cyan);
-            box-shadow: 
-                0 0 20px var(--neon-cyan),
-                inset 0 0 30px rgba(0, 255, 255, 0.1);
+            width: 100%;
+            height: auto;
+            border: 2px solid var(--neon-cyan);
+            box-shadow: 0 0 15px var(--neon-cyan), inset 0 0 20px rgba(0, 255, 255, 0.1);
+            background: #000;
+            aspect-ratio: 6/5;
         }
 
-        /* Overlays */
         .overlay {
             position: absolute;
             top: 0;
@@ -104,71 +131,210 @@
             align-items: center;
             justify-content: center;
             z-index: 10;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
-        .overlay.hidden {
-            display: none;
-        }
+        .overlay.hidden { display: none; }
 
         .overlay h2 {
             font-family: var(--font-pixel);
             font-size: 24px;
-            color: var(--neon-pink);
-            text-shadow: var(--glow-pink);
-            margin-bottom: 20px;
+            color: var(--neon-cyan);
+            text-shadow: var(--glow-cyan);
+            margin-bottom: 15px;
+            text-align: center;
         }
 
         .overlay p {
             font-family: var(--font-pixel);
-            font-size: 12px;
-            color: var(--neon-cyan);
-            margin: 10px 0;
+            font-size: 10px;
+            color: var(--neon-yellow);
+            margin: 8px 0;
+            text-align: center;
         }
 
         .start-btn {
             font-family: var(--font-pixel);
             font-size: 14px;
             padding: 15px 30px;
-            margin-top: 20px;
+            margin-top: 15px;
             background: linear-gradient(180deg, #333, #111);
             border: 3px solid var(--neon-cyan);
             color: var(--neon-cyan);
             cursor: pointer;
-            transition: all 0.3s ease;
         }
 
-        .start-btn:hover {
+        .start-btn:active {
             background: var(--neon-cyan);
             color: #000;
-            box-shadow: 0 0 30px var(--neon-cyan);
         }
 
-        /* Controls Info */
-        .controls-info {
-            margin-top: 30px;
+        /* Controls Area */
+        .controls-area {
+            width: 100%;
+            max-width: 380px;
+            height: 160px;
+            margin-top: 10px;
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .control-group-left, .control-group-right {
+            position: relative;
+            width: 45%;
+            height: 100%;
+        }
+
+        .control-btn {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-family: var(--font-pixel);
-            font-size: 8px;
-            color: #666;
-            text-align: center;
-            line-height: 2;
+            font-size: 20px;
+            user-select: none;
+            touch-action: none;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
         }
 
-        .controls-info span {
+        .control-btn:active, .control-btn.active {
+            background: var(--neon-cyan);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+
+        #btn-left {
+            bottom: 20px;
+            left: 10px;
+            width: 60px;
+            height: 60px;
+        }
+
+        #btn-right {
+            bottom: 20px;
+            left: 80px;
+            width: 60px;
+            height: 60px;
+        }
+
+        #btn-thrust {
+            bottom: 90px; /* Above shoot/right */
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-color: var(--neon-yellow);
+            color: var(--neon-yellow);
+        }
+        
+        #btn-thrust:active, #btn-thrust.active {
+            background: var(--neon-yellow);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-yellow);
+        }
+
+        #btn-shoot {
+            bottom: 20px;
+            right: 20px;
+            width: 70px;
+            height: 70px;
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+            font-size: 12px;
+        }
+
+        #btn-shoot:active, #btn-shoot.active {
+            background: var(--neon-red);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-red);
+        }
+        
+        #btn-hyper {
+            top: 0px;
+            right: 120px;
+            width: 40px;
+            height: 40px; /* Small button in middle/top */
+            font-size: 10px;
+            border-color: var(--neon-purple);
+            color: var(--neon-purple);
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* Instructions Modal */
+        .instructions-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.98);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .instructions-modal.hidden { display: none; }
+
+        .instruction-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 12px 0;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .control-icon {
+            width: 30px;
+            height: 30px;
+            border: 2px solid var(--neon-cyan);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
             color: var(--neon-cyan);
         }
 
-        /* Responsive */
-        @media (max-width: 700px) {
-            .game-layout {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .side-panel {
-                flex-direction: row;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
+        .control-text {
+            font-family: var(--font-pixel);
+            font-size: 10px;
+            color: var(--neon-yellow);
+        }
+
+        .got-it-btn {
+            font-family: var(--font-pixel);
+            font-size: 14px;
+            padding: 15px 40px;
+            margin-top: 25px;
+            background: var(--neon-cyan);
+            border: none;
+            color: #000;
+            cursor: pointer;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 10px;
+            padding: 5px 8px;
+            z-index: 50;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            text-decoration: none;
+            font-family: var(--font-pixel);
         }
     </style>
 </head>
@@ -180,60 +346,90 @@
     <div class="game-wrapper">
         <h1 class="game-title">ASTEROIDS</h1>
 
-        <div class="game-layout">
-            <div class="side-panel">
-                <div class="panel-box">
-                    <div class="panel-label">SCORE</div>
-                    <div class="panel-value" id="score">0</div>
-                </div>
-                <div class="panel-box">
-                    <div class="panel-label">LEVEL</div>
-                    <div class="panel-value" id="level">1</div>
-                </div>
-                <div class="panel-box">
-                    <div class="panel-label">LIVES</div>
-                    <div class="lives-container" id="lives-display"></div>
-                </div>
-                <div class="panel-box">
-                    <div class="panel-label">HIGH</div>
-                    <div class="panel-value" id="high-score">0</div>
-                </div>
+        <div class="game-hud">
+            <div class="hud-section">
+                <span class="panel-label">SCORE</span>
+                <span class="panel-value" id="score">0</span>
+            </div>
+            <div class="hud-section">
+                <span class="panel-label">HIGH</span>
+                <span class="panel-value" id="high-score">0</span>
+            </div>
+            <div class="hud-section">
+                <span class="panel-label">LEVEL</span>
+                <span class="panel-value" id="level">1</span>
+            </div>
+            <div class="hud-section">
+                <span class="panel-label">LIVES</span>
+                <div class="lives-container" id="lives-display"></div>
+            </div>
+        </div>
+
+        <div class="game-container">
+            <canvas id="game-canvas" width="600" height="500"></canvas>
+            
+            <div class="overlay" id="start-overlay">
+                <h2>ASTEROIDS</h2>
+                <p>MOBILE EDITION</p>
+                <button class="start-btn" id="start-btn">TAP TO START</button>
             </div>
 
-            <div class="game-canvas-container">
-                <canvas id="game-canvas" width="600" height="500"></canvas>
-                
-                <div class="overlay" id="start-overlay">
-                    <h2>ASTEROIDS</h2>
-                    <p>BLAST THE ROCKS</p>
-                    <button class="start-btn" id="start-btn">START GAME</button>
-                    <div class="controls-info">
-                        <span>←→</span> ROTATE | <span>↑</span> THRUST<br>
-                        <span>SPACE</span> SHOOT | <span>P</span> PAUSE
-                    </div>
-                </div>
+            <div class="overlay hidden" id="pause-overlay">
+                <h2>PAUSED</h2>
+                <button class="start-btn" id="resume-btn">RESUME</button>
+            </div>
 
-                <div class="overlay hidden" id="pause-overlay">
-                    <h2>PAUSED</h2>
-                    <p>PRESS P TO CONTINUE</p>
-                </div>
+            <div class="overlay hidden" id="gameover-overlay">
+                <h2>GAME OVER</h2>
+                <p>SCORE: <span id="final-score">0</span></p>
+                <p>LEVEL: <span id="final-level">1</span></p>
+                <div id="high-score-section"></div>
+                <button class="start-btn" id="restart-btn">PLAY AGAIN</button>
+            </div>
+        </div>
 
-                <div class="overlay hidden" id="gameover-overlay">
-                    <h2>GAME OVER</h2>
-                    <p>SCORE: <span id="final-score">0</span></p>
-                    <p>LEVEL: <span id="final-level">1</span></p>
-                    <div id="high-score-section"></div>
-                    <button class="start-btn" id="restart-btn">PLAY AGAIN</button>
-                </div>
+        <div class="controls-area">
+            <div class="control-group-left">
+                <div class="control-btn" id="btn-left">◀</div>
+                <div class="control-btn" id="btn-right">▶</div>
+            </div>
+            
+            <div class="control-btn" id="btn-hyper">H</div>
+            
+            <div class="control-group-right">
+                <div class="control-btn" id="btn-thrust">▲</div>
+                <div class="control-btn" id="btn-shoot">FIRE</div>
             </div>
         </div>
     </div>
 
-    <script>
-        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-            window.location.href = "mobile.html";
-        }
-    </script>
+    <!-- Instructions Modal -->
+    <div class="instructions-modal hidden" id="instructions-modal">
+        <h2>HOW TO PLAY</h2>
+        
+        <div class="instruction-item">
+            <div class="control-icon">◀ ▶</div>
+            <div class="control-text">Rotate Left / Right</div>
+        </div>
+        
+        <div class="instruction-item">
+            <div class="control-icon" style="border-color: var(--neon-yellow); color: var(--neon-yellow);">▲</div>
+            <div class="control-text">Thrust Forward</div>
+        </div>
+        
+        <div class="instruction-item">
+            <div class="control-icon" style="border-color: var(--neon-red); color: var(--neon-red);">●</div>
+            <div class="control-text">Fire Laser</div>
+        </div>
+        
+        <div class="instruction-item">
+            <div class="control-icon" style="border-color: var(--neon-purple); color: var(--neon-purple);">H</div>
+            <div class="control-text">Hyperspace (Jump)</div>
+        </div>
+        
+        <button class="got-it-btn" id="got-it-btn">GOT IT!</button>
+    </div>
+
     <script type="module">
         import { getTopScore, isHighScore, addHighScore, getTopScoreEntry } from '../shared/highscore.js';
 
@@ -249,6 +445,7 @@
         const gameoverOverlay = document.getElementById('gameover-overlay');
         const highScoreSection = document.getElementById('high-score-section');
         const livesEl = document.getElementById('lives-display');
+        const instructionsModal = document.getElementById('instructions-modal');
 
         const GAME_NAME = 'asteroids';
         const FPS = 60;
@@ -287,10 +484,23 @@
         // Input
         const keys = {};
 
+        function checkFirstPlay() {
+            const hasPlayed = localStorage.getItem('asteroidsMobileFirstPlay');
+            if (!hasPlayed) {
+                instructionsModal.classList.remove('hidden');
+            }
+        }
+
+        function dismissInstructions() {
+            localStorage.setItem('asteroidsMobileFirstPlay', 'true');
+            instructionsModal.classList.add('hidden');
+        }
+
         function init() {
             const entry = getTopScoreEntry(GAME_NAME);
-            highScoreEl.textContent = entry ? `${entry.name} ${entry.score}` : '0';
+            highScoreEl.textContent = entry ? entry.score : '0';
             updateLivesDisplay();
+            checkFirstPlay();
         }
 
         function resetShip() {
@@ -371,20 +581,30 @@
             const blinkOn = ship.blinkNum % 2 === 0;
 
             // Rotation
-            if (keys['ArrowLeft'] || keys['a'] || keys['A']) ship.rot = TURN_SPEED / 180 * Math.PI / FPS;
-            else if (keys['ArrowRight'] || keys['d'] || keys['D']) ship.rot = -TURN_SPEED / 180 * Math.PI / FPS;
+            if (keys['ArrowLeft']) ship.rot = TURN_SPEED / 180 * Math.PI / FPS;
+            else if (keys['ArrowRight']) ship.rot = -TURN_SPEED / 180 * Math.PI / FPS;
             else ship.rot = 0;
 
             if (!exploding) {
                 ship.a += ship.rot;
 
                 // Thrust
-                if (keys['ArrowUp'] || keys['w'] || keys['W']) {
+                if (keys['ArrowUp']) {
                     ship.thrusting = true;
                     ship.vel.x += SHIP_THRUST * Math.cos(ship.a) / FPS;
                     ship.vel.y -= SHIP_THRUST * Math.sin(ship.a) / FPS;
                 } else {
                     ship.thrusting = false;
+                }
+                
+                // Shoot (Continuous if holding, but rate limited?)
+                // Original asteroids is usually spam fire. Desktop uses keydown ' '.
+                // Mobile button: we should fire on press, maybe repeat?
+                // For now, fire on press is handled in touchstart.
+                // If we want auto-fire, we'd check keys[' '] here.
+                if (keys[' ']) {
+                    // Simple rate limit
+                    if (frameCount % 10 === 0) shootLaser();
                 }
 
                 // Friction
@@ -408,7 +628,6 @@
                 ship.lasers[i].y += ship.lasers[i].vel.y;
                 ship.lasers[i].dist += Math.sqrt(ship.lasers[i].vel.x ** 2 + ship.lasers[i].vel.y ** 2);
 
-                // Screen wrap lasers
                 if (ship.lasers[i].x < 0) ship.lasers[i].x = canvas.width;
                 else if (ship.lasers[i].x > canvas.width) ship.lasers[i].x = 0;
                 if (ship.lasers[i].y < 0) ship.lasers[i].y = canvas.height;
@@ -434,14 +653,12 @@
             for (let i = roids.length - 1; i >= 0; i--) {
                 for (let j = ship.lasers.length - 1; j >= 0; j--) {
                     if (distBetweenPoints(ship.lasers[j].x, ship.lasers[j].y, roids[i].x, roids[i].y) < roids[i].r) {
-                        // Destroy asteroid
                         const r = roids[i].r;
                         const x = roids[i].x;
                         const y = roids[i].y;
                         ship.lasers.splice(j, 1);
                         roids.splice(i, 1);
 
-                        // Split asteroid
                         if (r > Math.ceil(ROID_SIZE / 8)) {
                             roids.push(newAsteroid(x, y, Math.ceil(r / 2)));
                             roids.push(newAsteroid(x, y, Math.ceil(r / 2)));
@@ -451,7 +668,6 @@
                         }
                         scoreEl.textContent = score;
 
-                        // Check level complete
                         if (roids.length === 0) {
                             level++;
                             levelEl.textContent = level;
@@ -472,7 +688,6 @@
                 }
             }
 
-            // Handle explosion
             if (exploding) {
                 ship.explodeTime--;
                 if (ship.explodeTime === 0) {
@@ -486,7 +701,6 @@
                 }
             }
 
-            // Handle invincibility blink
             if (ship.blinkNum > 0) {
                 ship.blinkTime--;
                 if (ship.blinkTime === 0) {
@@ -497,7 +711,6 @@
         }
 
         function draw() {
-            // Background
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -506,7 +719,6 @@
             const exploding = ship.explodeTime > 0;
             const blinkOn = ship.blinkNum % 2 === 0;
 
-            // Draw ship
             if (!exploding) {
                 if (blinkOn) {
                     ctx.strokeStyle = '#00ffff';
@@ -530,7 +742,6 @@
                     ctx.closePath();
                     ctx.stroke();
 
-                    // Draw thrust
                     if (ship.thrusting && Math.random() > 0.3) {
                         ctx.fillStyle = '#ff6600';
                         ctx.shadowColor = '#ff6600';
@@ -553,7 +764,6 @@
                     ctx.shadowBlur = 0;
                 }
             } else {
-                // Draw explosion
                 ctx.fillStyle = '#ff0055';
                 ctx.shadowBlur = 30;
                 ctx.shadowColor = '#ff0055';
@@ -571,7 +781,6 @@
                 ctx.shadowBlur = 0;
             }
 
-            // Draw lasers
             ctx.fillStyle = '#ff0055';
             ctx.shadowBlur = 10;
             ctx.shadowColor = '#ff0055';
@@ -582,7 +791,6 @@
             }
             ctx.shadowBlur = 0;
 
-            // Draw asteroids
             ctx.strokeStyle = '#00ffff';
             ctx.lineWidth = 2;
             ctx.shadowBlur = 10;
@@ -668,28 +876,26 @@
                 `;
                 
                 const inputs = highScoreSection.querySelectorAll('.hs-input');
-                
-                // Auto-select content when focused
                 inputs.forEach((input, index) => {
-                    input.addEventListener('focus', () => input.select());
+                    input.addEventListener('focus', () => {
+                         input.select();
+                         document.body.classList.add('keyboard-open');
+                         window.scrollTo(0,0);
+                    });
+                    input.addEventListener('blur', () => {
+                         setTimeout(() => document.body.classList.remove('keyboard-open'), 100);
+                    });
                     input.addEventListener('input', (e) => {
                         e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
-                        if (e.target.value && index < 2) {
-                            inputs[index + 1].focus();
-                        }
+                        if (e.target.value && index < 2) inputs[index + 1].focus();
                     });
                 });
-                
-                // Delayed focus to ensure DOM is ready
-                setTimeout(() => {
-                    inputs[0].focus();
-                }, 100);
                 
                 document.getElementById('save-score-btn').addEventListener('click', () => {
                     const name = Array.from(inputs).map(i => i.value || ' ').join('');
                     addHighScore(GAME_NAME, name, score);
                     const entry = getTopScoreEntry(GAME_NAME);
-                    highScoreEl.textContent = entry ? `${entry.name} ${entry.score}` : '0';
+                    highScoreEl.textContent = entry ? entry.score : '0';
                     highScoreSection.innerHTML = '<p style="color: var(--neon-green); margin-top: 20px; font-family: var(--font-pixel); font-size: 12px;">SCORE SAVED!</p>';
                 });
             }
@@ -697,35 +903,85 @@
             gameoverOverlay.classList.remove('hidden');
         }
 
+        // Button Controls
+        const buttons = {
+            'btn-left': 'ArrowLeft',
+            'btn-right': 'ArrowRight',
+            'btn-thrust': 'ArrowUp',
+            'btn-shoot': ' '
+        };
+
+        Object.keys(buttons).forEach(id => {
+            const btn = document.getElementById(id);
+            const key = buttons[id];
+            
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Prevent accidental scroll/selection
+                keys[key] = true;
+                btn.classList.add('active');
+                
+                // For shooting, maybe we want distinct shots?
+                if (key === ' ' && gameStarted && !gameOver && !paused) {
+                    shootLaser();
+                }
+            });
+
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                keys[key] = false;
+                 btn.classList.remove('active');
+            });
+            
+             // Also handle mouseDown/Up for testing on browser
+            btn.addEventListener('mousedown', (e) => {
+                keys[key] = true;
+                btn.classList.add('active');
+                if (key === ' ' && gameStarted && !gameOver && !paused) {
+                     shootLaser();
+                }
+            });
+            btn.addEventListener('mouseup', (e) => {
+                keys[key] = false;
+                btn.classList.remove('active');
+            });
+            btn.addEventListener('mouseleave', (e) => {
+                keys[key] = false;
+                btn.classList.remove('active');
+            });
+        });
+        
+        // Hyperspace
+        const btnHyper = document.getElementById('btn-hyper');
+        btnHyper.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            btnHyper.classList.add('active');
+            if (gameStarted && !gameOver && !paused) {
+                ship.x = Math.random() * canvas.width;
+                ship.y = Math.random() * canvas.height;
+            }
+        });
+        btnHyper.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            btnHyper.classList.remove('active');
+        });
+
         // Event listeners
         document.getElementById('start-btn').addEventListener('click', startGame);
         document.getElementById('restart-btn').addEventListener('click', startGame);
+        document.getElementById('resume-btn').addEventListener('click', togglePause);
+        document.getElementById('got-it-btn').addEventListener('click', dismissInstructions);
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'p' || e.key === 'P') {
-                togglePause();
+        // Prevent default touch behaviors on the whole document (for good measure)
+        document.addEventListener('touchmove', (e) => {
+            // Allow UI interaction
+             if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
                 return;
             }
-            
-            // Prevent arrow keys from scrolling
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+            if (gameStarted && !gameOver) {
                 e.preventDefault();
             }
-            
-            if (!gameStarted || gameOver || paused) return;
-            
-            keys[e.key] = true;
-            
-            if (e.key === ' ') {
-                shootLaser();
-            }
-        });
+        }, { passive: false });
 
-        document.addEventListener('keyup', (e) => {
-            keys[e.key] = false;
-        });
-
-        // Initialize
         init();
     </script>
 </body>

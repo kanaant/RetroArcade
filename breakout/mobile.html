@@ -686,6 +686,10 @@
         let lastTouchX = 0;
 
         document.addEventListener('touchmove', (e) => {
+            // Allow UI interaction
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
+                return;
+            }
             if (!gameStarted || gameOver || paused) return;
             e.preventDefault();
             const touch = e.touches[0];
@@ -701,6 +705,10 @@
         }, { passive: false });
 
         document.addEventListener('touchstart', (e) => {
+            // Allow UI interaction
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
+                return;
+            }
             const touch = e.touches[0];
             lastTouchX = touch.clientX;
             

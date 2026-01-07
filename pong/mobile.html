@@ -2,16 +2,58 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>PONG - Retro Arcade (Mobile)</title>
     <link rel="stylesheet" href="../shared/arcade-theme.css">
     <style>
-        /* Mobile Specific Overrides */
-        body {
-            overflow: hidden;
+        * {
             touch-action: none;
+            -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
+        }
+
+        html, body {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
+        /* Portrait Mode Warning */
+        #rotate-warning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-family: var(--font-pixel);
+            color: var(--neon-cyan);
+        }
+
+        @media (orientation: portrait) {
+            #rotate-warning { display: flex; }
+            .game-wrapper { display: none !important; }
+        }
+
+        .rotate-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            animation: rotate 2s infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(90deg); }
+            100% { transform: rotate(0deg); }
         }
 
         .game-wrapper {
@@ -21,19 +63,8 @@
             width: 100%;
             height: 100%;
             padding: 10px;
-            padding-top: 60px; /* Header spacing */
             box-sizing: border-box;
-            justify-content: flex-start;
-        }
-
-        .game-title {
-            font-family: var(--font-pixel);
-            font-size: 24px;
-            color: var(--neon-pink);
-            text-shadow: var(--glow-pink);
-            margin-bottom: 5px;
-            letter-spacing: 4px;
-            text-align: center;
+            justify-content: center;
         }
 
         .game-hud {
@@ -41,66 +72,111 @@
             justify-content: space-between;
             align-items: center;
             width: 100%;
-            max-width: 350px;
+            max-width: 600px;
+            padding: 0 20px;
             margin-bottom: 5px;
             font-family: var(--font-pixel);
+            position: absolute;
+            top: 10px;
+            pointer-events: none;
         }
 
-        .player-score {
-            color: var(--neon-cyan);
-            text-shadow: 0 0 10px var(--neon-cyan);
-            font-size: 20px;
-        }
-
-        .ai-score {
-            color: var(--neon-pink);
-            text-shadow: 0 0 10px var(--neon-pink);
-            font-size: 20px;
-        }
-
-        .rally-display {
-            color: var(--neon-yellow);
-            font-size: 10px;
-            font-weight: bold;
-        }
+        .player-score { color: var(--neon-cyan); font-size: 24px; text-shadow: 0 0 10px var(--neon-cyan); }
+        .ai-score { color: var(--neon-pink); font-size: 24px; text-shadow: 0 0 10px var(--neon-pink); }
+        .rally-container { text-align: center; }
+        .rally-label { color: var(--neon-yellow); font-size: 8px; display: block; }
+        .rally-count { color: #fff; font-size: 14px; }
 
         .game-container {
             position: relative;
             width: 100%;
-            max-width: 350px; /* Mobile width constraint */
-            /* Override shared theme */
-            min-height: auto;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
             padding: 0;
-            display: block;
-            margin-top: 100px; /* Requested margin */
         }
 
+        /* Responsive Canvas: Maintain Aspect Ratio or Fill? 
+           For Pong, filling width is good, height usually matches.
+           Let's use a fixed aspect ratio container that scales. */
         #game-canvas {
-            border: 4px solid var(--neon-pink);
-            box-shadow: 
-                0 0 15px var(--neon-pink),
-                inset 0 0 20px rgba(255, 0, 128, 0.1);
+            border: 2px solid var(--neon-pink);
             background: #000;
-            width: 100%;
-            height: auto;
-            /* Vertical aspect ratio handling in JS */
+            max-width: 100%;
+            max-height: 80vh; 
+            aspect-ratio: 3/2;
+            box-shadow: 0 0 15px var(--neon-pink);
         }
 
-        /* Overlay Adjustments */
-        .overlay h2 { font-size: 20px; }
-        .overlay p { font-size: 10px; }
-        .start-btn { font-size: 12px; padding: 10px 20px; }
-        
-        .back-btn {
+        .overlay {
             position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .overlay.hidden { display: none; }
+
+        .overlay h2 {
+            font-family: var(--font-pixel);
+            font-size: 20px;
+            color: var(--neon-pink);
+            text-shadow: var(--glow-pink);
+            margin-bottom: 10px;
+        }
+
+        .overlay p {
+            font-family: var(--font-pixel);
+            font-size: 10px;
+            color: var(--neon-cyan);
+            margin: 5px 0;
+        }
+
+        .start-btn {
+            font-family: var(--font-pixel);
+            font-size: 12px;
+            padding: 10px 20px;
+            margin-top: 15px;
+            background: linear-gradient(180deg, #333, #111);
+            border: 2px solid var(--neon-pink);
+            color: var(--neon-pink);
+            cursor: pointer;
+        }
+
+        .back-btn {
+            position: fixed;
             top: 10px;
             left: 10px;
-            font-size: 8px;
+            font-size: 10px;
             padding: 5px 10px;
             z-index: 2000;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            text-decoration: none;
+            font-family: var(--font-pixel);
         }
 
-        /* Instructions Modal */
+        .touch-zone {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 50%;
+            height: 100%;
+            z-index: 5;
+            /* background: rgba(0, 255, 255, 0.1); Debug visibility */
+        }
+        
+        /* Instructions */
         .instructions-modal {
             position: fixed;
             top: 0;
@@ -113,126 +189,103 @@
             align-items: center;
             justify-content: center;
             z-index: 3000;
-            padding: 20px;
             text-align: center;
         }
-        
         .instructions-modal.hidden { display: none; }
         
         .instruction-icon {
             font-size: 40px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             color: var(--neon-cyan);
-            animation: moveHand 2s infinite;
+            animation: slideV 2s infinite;
         }
-        
-        @keyframes moveHand {
-            0% { transform: translateX(-20px); }
-            50% { transform: translateX(20px); }
-            100% { transform: translateX(-20px); }
-        }
-
-        /* Keyboard Handling */
-        body.keyboard-open .game-title,
-        body.keyboard-open .game-hud,
-        body.keyboard-open .game-container canvas,
-        body.keyboard-open .back-btn {
-            display: none !important;
-        }
-        
-        body.keyboard-open .game-container {
-            margin-top: 0 !important;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-        }
-        
-        body.keyboard-open .overlay {
-            position: static;
-            background: transparent;
-            height: auto;
+        @keyframes slideV {
+            0% { transform: translateY(-20px); }
+            50% { transform: translateY(20px); }
+            100% { transform: translateY(-20px); }
         }
     </style>
 </head>
 <body>
+    <div id="rotate-warning">
+        <div class="rotate-icon">📱</div>
+        <p>PLEASE ROTATE DEVICE</p>
+        <p style="font-size: 10px; color: #666; margin-top: 10px;">FOR LANDSCAPE MODE</p>
+    </div>
+
     <div class="crt-overlay"></div>
     <div class="grid-bg"></div>
     <a href="../index.html" class="back-btn">◀ ARCADE</a>
 
     <div class="game-wrapper">
-        <h1 class="game-title">PONG</h1>
-
         <div class="game-hud">
-            <!-- Player is bottom (Cyan), AI is top (Pink) usually, but logic inverted for vertical? 
-                 Let's stick to: Player = Cyan, AI = Pink. 
-                 Scoreboard: Player Left, AI Right for simplicity -->
             <span class="player-score" id="player-score">0</span>
-            <div style="display: flex; flex-direction: column; align-items: center;">
-                <span class="rally-display">RALLY: <span id="rally-count">0</span></span>
+            <div class="rally-container">
+                <span class="rally-label">RALLY</span>
+                <span class="rally-count" id="rally-count">0</span>
             </div>
             <span class="ai-score" id="ai-score">0</span>
         </div>
-        
-        <div class="high-score-display" style="font-size: 10px; margin-bottom: 5px; color: var(--neon-yellow);">HIGH SCORE: <span id="high-score">0</span></div>
 
         <div class="game-container">
-            <canvas id="game-canvas" width="350" height="500"></canvas>
+            <!-- Canvas resolution 480x320 (3:2 Aspect Ratio) good for mobile landscape -->
+            <canvas id="game-canvas" width="480" height="320"></canvas>
 
             <div class="overlay" id="start-overlay">
-                <h2>PONG MOBILE</h2>
-                <p>FIRST TO 5 WINS!</p>
+                <h2>PONG</h2>
+                <p>MOBILE EDITION</p>
+                <p style="color: var(--neon-yellow);">FIRST TO 5 WINS</p>
                 <button class="start-btn" id="start-btn">START GAME</button>
             </div>
 
             <div class="overlay hidden" id="pause-overlay">
                 <h2>PAUSED</h2>
                 <button class="start-btn" id="resume-btn">RESUME</button>
-                <button class="start-btn" id="quit-btn" style="margin-top: 10px; border-color: var(--neon-red); color: var(--neon-red);">QUIT</button>
             </div>
 
             <div class="overlay hidden" id="gameover-overlay">
                 <h2 id="winner-text">PLAYER WINS!</h2>
-                <p>FINAL SCORE: <span id="final-score">5 - 0</span></p>
+                <p>FINAL SCORE: <span id="final-score">0 - 0</span></p>
                 <div id="high-score-section"></div>
                 <button class="start-btn" id="restart-btn">PLAY AGAIN</button>
             </div>
 
             <div class="overlay hidden" id="score-overlay" style="background: transparent;">
-                <h2 id="scorer-text" style="font-size: 16px; text-shadow: 0 0 5px white;">POINT!</h2>
+                <h2 id="scorer-text" style="font-size: 24px; text-shadow: 0 0 10px #fff;">POINT!</h2>
             </div>
+            
+            <!-- Explicit Touch Zone (Left Half) -->
+            <div class="touch-zone" id="touch-zone"></div>
         </div>
     </div>
-    
+
     <!-- Instructions Modal -->
-    <div class="instructions-modal" id="instructions-modal">
-        <h2 style="font-family: var(--font-pixel); color: var(--neon-cyan); margin-bottom: 30px;">HOW TO PLAY</h2>
-        <div class="instruction-icon">👆↔️</div>
-        <p style="font-family: var(--font-pixel); font-size: 12px; color: #fff; line-height: 1.6; margin-bottom: 30px;">
-            DRAG YOUR FINGER<br>LEFT AND RIGHT<br>TO MOVE PADDLE
+    <div class="instructions-modal hidden" id="instructions-modal">
+        <h2 style="font-family: var(--font-pixel); color: var(--neon-cyan); margin-bottom: 20px;">HOW TO PLAY</h2>
+        <div class="instruction-icon">👆↕️</div>
+        <p style="font-family: var(--font-pixel); font-size: 12px; color: #fff; line-height: 1.6; margin-bottom: 25px;">
+            DRAG UP AND DOWN<br>ON THE LEFT SIDE<br>TO MOVE PADDLE
         </p>
-        <button class="start-btn" id="got-it-btn">GOT IT!</button>
+        <button class="start-btn" id="got-it-btn" style="background: var(--neon-cyan); color: #000; border: none;">GOT IT!</button>
     </div>
 
     <script type="module">
-        import { getTopScore, isHighScore, addHighScore, createHighScoreInput } from '../shared/highscore.js';
+        import { getTopScore, isHighScore, addHighScore } from '../shared/highscore.js';
 
         const GAME_NAME = 'pong';
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
 
-        // Game constants (Vertical Orientation)
-        const PADDLE_WIDTH = 80;  // Wider for vertical play
-        const PADDLE_HEIGHT = 15;
-        const BALL_SIZE = 12;
+        // Game constants
+        const PADDLE_WIDTH = 10;
+        const PADDLE_HEIGHT = 60;
+        const BALL_SIZE = 8;
         const WINNING_SCORE = 5;
 
-        // Game state
-        // Player 1 = Bottom (You)
-        // Player 2 = Top (AI)
-        let player1 = { x: 0, score: 0 }; 
-        let player2 = { x: 0, score: 0 };
-        let ball = { x: 0, y: 0, dx: 0, dy: 0, speed: 5 };
+        // Game state (Player Left, AI Right)
+        let player1 = { y: 0, score: 0 };
+        let player2 = { y: 0, score: 0 };
+        let ball = { x: 0, y: 0, dx: 0, dy: 0, speed: 4 };
         
         let gameOver = false;
         let paused = false;
@@ -241,190 +294,176 @@
         let rallyCount = 0;
         let maxRally = 0;
         let animationId = null;
-        
-        // AI settings
-        const AI_SPEED = 3.5;
-        const AI_REACTION = 0.08;
 
-        // DOM elements
+        // Elements
         const playerScoreEl = document.getElementById('player-score');
         const aiScoreEl = document.getElementById('ai-score');
         const rallyCountEl = document.getElementById('rally-count');
-        const highScoreEl = document.getElementById('high-score');
         const startOverlay = document.getElementById('start-overlay');
         const pauseOverlay = document.getElementById('pause-overlay');
         const gameoverOverlay = document.getElementById('gameover-overlay');
         const scoreOverlay = document.getElementById('score-overlay');
         const instructionsModal = document.getElementById('instructions-modal');
+        const touchZone = document.getElementById('touch-zone');
 
-        function init() {
-            highScoreEl.textContent = getTopScore(GAME_NAME).toLocaleString();
-            resetPositions();
-            
-            if (localStorage.getItem('pongMobileFirstPlay')) {
-                instructionsModal.classList.add('hidden');
+        function checkFirstPlay() {
+            if (!localStorage.getItem('pongMobileLandscapeFirstPlay')) {
+                instructionsModal.classList.remove('hidden');
             }
         }
-        
+
+        function init() {
+            resetPositions();
+            checkFirstPlay();
+        }
+
         function resetPositions() {
-            // Center paddles horizontally
-            player1.x = canvas.width / 2 - PADDLE_WIDTH / 2;
-            player2.x = canvas.width / 2 - PADDLE_WIDTH / 2;
+            player1.y = canvas.height / 2 - PADDLE_HEIGHT / 2;
+            player2.y = canvas.height / 2 - PADDLE_HEIGHT / 2;
             resetBall();
         }
 
         function resetBall() {
             ball.x = canvas.width / 2 - BALL_SIZE / 2;
             ball.y = canvas.height / 2 - BALL_SIZE / 2;
-            ball.speed = 5 + Math.min(player1.score + player2.score, 10) * 0.3;
+            ball.speed = 4 + Math.min(player1.score + player2.score, 10) * 0.2;
             rallyCount = 0;
             updateRallyDisplay();
+
+            // Serve random vertical, direction towards last loser or random
+            const angle = (Math.random() - 0.5) * Math.PI / 3;
+            const dirX = Math.random() > 0.5 ? 1 : -1;
             
-            // Serve vertically
-            // Random direction left/right, serve towards loser or random
-            const angle = (Math.random() - 0.5) * Math.PI / 3; // +/- 30 degrees from vertical? No, from horizontal.
-            
-            // New vertical logic: 
-            // We want dy to be significant.
-            // Angle should be close to +/- 90 degrees (vertical).
-            // Let's implement manually:
-            ball.dx = (Math.random() - 0.5) * 4; // Slight horizontal drift
-            ball.dy = (Math.random() > 0.5 ? 1 : -1) * ball.speed; // Up or Down
+            ball.dx = Math.cos(angle) * ball.speed * dirX;
+            ball.dy = Math.sin(angle) * ball.speed;
             
             serving = true;
             setTimeout(() => serving = false, 1000);
         }
 
-        // --- TOUCH INPUT ---
+        // --- TOUCH LOGIC (Left Side Drag) ---
         let isDragging = false;
-        
-        document.addEventListener('touchstart', (e) => {
-             // Simple tap anywhere to start tracking relative motion?
-             // Or absolute mapping? Absolute mapping usually feels better for paddle games if screen width is 1:1.
-             // Since canvas max-width is 350, it's close to screen width.
-             // Let's try direct mapping first (touch X = paddle center X).
-             handleInput(e.touches[0].clientX);
-             isDragging = true;
-        }, { passive: false });
-        
-        document.addEventListener('touchmove', (e) => {
-             if (isDragging) {
-                 e.preventDefault(); // Prevent scroll
-                 handleInput(e.touches[0].clientX);
-             }
-        }, { passive: false });
-        
-        document.addEventListener('touchend', () => isDragging = false);
+        let touchStartY = 0;
+        let paddleStartY = 0;
 
-        function handleInput(clientX) {
-            if (!gameStarted || paused || gameOver) return;
+        touchZone.addEventListener('touchstart', (e) => {
+            if (!gameStarted || gameOver || paused) return;
+            e.preventDefault();
+            isDragging = true;
             
-            // Get canvas boundaries/scale
+            // Simple Absolute Mapping mostly preferred for paddles
+            // Map touch Y % of screen height to canvas Y
+            const touch = e.touches[0];
+            updatePaddleFromTouch(touch.clientY);
+        }, { passive: false });
+
+        touchZone.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            updatePaddleFromTouch(touch.clientY);
+        }, { passive: false });
+
+        touchZone.addEventListener('touchend', () => isDragging = false);
+
+        function updatePaddleFromTouch(clientY) {
+            // Get screen coordinates of canvas or container
+            // Since we are in landscape, the canvas is centered.
+            // Let's assume the user touches relative to the viewport height.
             const rect = canvas.getBoundingClientRect();
-            // Scale logic if canvas display size != internal size
-            const scaleX = canvas.width / rect.width;
+            // Map clientY relative to rect top/bottom
+            // But touchZone is overlaying left half.
             
-            const touchX = (clientX - rect.left) * scaleX;
+            // let's use relative position within the paddle range
+            // If user touches top of screen, paddle at top. Bottom for bottom.
+            const screenH = window.innerHeight;
+            const ratio = clientY / screenH;
             
-            // Center paddle on finger
-            let newX = touchX - PADDLE_WIDTH / 2;
+            const targetY = ratio * (canvas.height - PADDLE_HEIGHT);
             
-            // Clamp
-            newX = Math.max(0, Math.min(canvas.width - PADDLE_WIDTH, newX));
-            
-            player1.x = newX;
+            // Lerp or direct set? Direct set feels more responsive
+            player1.y = Math.max(0, Math.min(canvas.height - PADDLE_HEIGHT, targetY));
         }
 
         function update() {
-            if (serving) return;
-            
+            if (serving || paused || gameOver) return;
+
             // Move Ball
             ball.x += ball.dx;
             ball.y += ball.dy;
-            
-            // Wall Collisions (Left/Right)
-            if (ball.x <= 0 || ball.x + BALL_SIZE >= canvas.width) {
-                ball.dx = -ball.dx;
-                ball.x = Math.max(0, Math.min(canvas.width - BALL_SIZE, ball.x));
+
+            // Wall Collisions (Top/Bottom)
+            if (ball.y <= 0 || ball.y + BALL_SIZE >= canvas.height) {
+                ball.dy = -ball.dy;
+                ball.y = Math.max(0, Math.min(canvas.height - BALL_SIZE, ball.y));
             }
-            
-            // AI Movement (Top Paddle)
-            updateAI();
-            
+
             // Paddle Collisions
-            
-            // Player 1 (Bottom) - y approx 470
-            const p1Y = canvas.height - 30;
-            if (ball.y + BALL_SIZE >= p1Y && 
-                ball.y <= p1Y + PADDLE_HEIGHT &&
-                ball.x + BALL_SIZE >= player1.x && 
-                ball.x <= player1.x + PADDLE_WIDTH) {
+            // Player 1 (Left) - x = 20
+            const p1X = 20;
+            if (ball.x <= p1X + PADDLE_WIDTH && 
+                ball.x + BALL_SIZE >= p1X &&
+                ball.y + BALL_SIZE >= player1.y && 
+                ball.y <= player1.y + PADDLE_HEIGHT) {
                 
-                // Hit Player Paddle
-                ball.dy = -Math.abs(ball.dy); // Force Up
-                ball.speed = Math.min(12, ball.speed * 1.05);
+                ball.speed = Math.min(10, ball.speed * 1.05);
+                const hitPos = (ball.y + BALL_SIZE/2 - player1.y) / PADDLE_HEIGHT;
+                const angle = (hitPos - 0.5) * Math.PI / 3; // -30 to 30 deg
                 
-                // Add horizontal spin based on hit position
-                const hitPos = (ball.x + BALL_SIZE / 2 - player1.x) / PADDLE_WIDTH; // 0 to 1
-                const angleOffset = (hitPos - 0.5) * 8; // -4 to +4 dx change
-                ball.dx += angleOffset;
+                ball.dx = Math.cos(angle) * ball.speed;
+                ball.dy = Math.sin(angle) * ball.speed;
+                ball.x = p1X + PADDLE_WIDTH;
                 
                 rallyCount++;
                 if (rallyCount > maxRally) maxRally = rallyCount;
                 updateRallyDisplay();
             }
-            
-            // Player 2 (Top AI) - y approx 15
-            const p2Y = 15;
-            if (ball.y <= p2Y + PADDLE_HEIGHT && 
-                ball.y + BALL_SIZE >= p2Y &&
-                ball.x + BALL_SIZE >= player2.x && 
-                ball.x <= player2.x + PADDLE_WIDTH) {
+
+            // AI (Right) - x = width - 20 - w
+            const p2X = canvas.width - 20 - PADDLE_WIDTH;
+            if (ball.x + BALL_SIZE >= p2X && 
+                ball.x <= p2X + PADDLE_WIDTH &&
+                ball.y + BALL_SIZE >= player2.y && 
+                ball.y <= player2.y + PADDLE_HEIGHT) {
+
+                ball.speed = Math.min(10, ball.speed * 1.05);
+                const hitPos = (ball.y + BALL_SIZE/2 - player2.y) / PADDLE_HEIGHT;
+                const angle = (hitPos - 0.5) * Math.PI / 3;
                 
-                // Hit AI Paddle
-                ball.dy = Math.abs(ball.dy); // Force Down
-                ball.speed = Math.min(12, ball.speed * 1.05);
-                
-                // Add horizontal spin
-                const hitPos = (ball.x + BALL_SIZE / 2 - player2.x) / PADDLE_WIDTH;
-                const angleOffset = (hitPos - 0.5) * 8;
-                ball.dx += angleOffset;
-                
+                ball.dx = -Math.cos(angle) * ball.speed; // Reflect left
+                ball.dy = Math.sin(angle) * ball.speed;
+                ball.x = p2X - BALL_SIZE;
+
                 rallyCount++;
                 if (rallyCount > maxRally) maxRally = rallyCount;
                 updateRallyDisplay();
             }
-            
-            // Scoring (Top/Bottom)
-            if (ball.y < 0) {
-                // Ball passed top -> Player Wins Point
-                player1.score++;
-                showScoreOverlay("YOU SCORE!");
-                if (player1.score >= WINNING_SCORE) endGame();
-                else resetBall();
-            } else if (ball.y > canvas.height) {
-                // Ball passed bottom -> AI Wins Point
+
+            // Scoring
+            if (ball.x < 0) {
                 player2.score++;
-                showScoreOverlay("AI SCORES!");
+                showScoreOverlay("AI SCORES");
                 if (player2.score >= WINNING_SCORE) endGame();
                 else resetBall();
+                updateScoreDisplay();
+            } else if (ball.x > canvas.width) {
+                player1.score++;
+                showScoreOverlay("YOU SCORE");
+                if (player1.score >= WINNING_SCORE) endGame();
+                else resetBall();
+                updateScoreDisplay();
             }
-            
-            updateScoreDisplay();
-        }
-        
-        function updateAI() {
-            // AI follows ball X
-            const targetX = ball.x + BALL_SIZE / 2 - PADDLE_WIDTH / 2;
-            const diff = targetX - player2.x;
-            
-            // Simple ease-in
-            if (Math.abs(diff) > 2) {
-                player2.x += Math.sign(diff) * Math.min(Math.abs(diff), AI_SPEED);
+
+            // AI Logic
+            // Simple follow Y
+            const targetY = ball.y + BALL_SIZE/2 - PADDLE_HEIGHT/2;
+            const diff = targetY - player2.y;
+            // AI Speed limit
+            const aiSpeed = 3.5;
+            if (Math.abs(diff) > 4) {
+                player2.y += Math.sign(diff) * Math.min(Math.abs(diff), aiSpeed);
             }
-            
-            // Clamp AI
-            player2.x = Math.max(0, Math.min(canvas.width - PADDLE_WIDTH, player2.x));
+            player2.y = Math.max(0, Math.min(canvas.height - PADDLE_HEIGHT, player2.y));
         }
 
         function showScoreOverlay(text) {
@@ -445,42 +484,40 @@
         function draw() {
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Center Line (Horizontal now)
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+
+            // Center Line
+            ctx.strokeStyle = '#333';
             ctx.setLineDash([10, 10]);
             ctx.beginPath();
-            ctx.moveTo(0, canvas.height / 2);
-            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.moveTo(canvas.width/2, 0);
+            ctx.lineTo(canvas.width/2, canvas.height);
             ctx.stroke();
             ctx.setLineDash([]);
-            
+
             // Paddles
-            // Player 1 (Bottom) - Cyan
-            ctx.fillStyle = '#00ffff';
+            ctx.fillStyle = '#00ffff'; // P1
             ctx.shadowColor = '#00ffff';
             ctx.shadowBlur = 15;
-            ctx.fillRect(player1.x, canvas.height - 30, PADDLE_WIDTH, PADDLE_HEIGHT);
-            
-            // Player 2 (Top) - Pink
-            ctx.fillStyle = '#ff00ff';
+            ctx.fillRect(20, player1.y, PADDLE_WIDTH, PADDLE_HEIGHT);
+
+            ctx.fillStyle = '#ff00ff'; // AI
             ctx.shadowColor = '#ff00ff';
-            ctx.fillRect(player2.x, 15, PADDLE_WIDTH, PADDLE_HEIGHT);
-            
-            ctx.shadowBlur = 0;
-            
+            ctx.fillRect(canvas.width - 20 - PADDLE_WIDTH, player2.y, PADDLE_WIDTH, PADDLE_HEIGHT);
+
             // Ball
-            ctx.fillStyle = '#ffffff';
+            ctx.fillStyle = '#fff';
+            ctx.shadowColor = '#fff';
+            ctx.shadowBlur = 10;
             ctx.beginPath();
             ctx.arc(ball.x + BALL_SIZE/2, ball.y + BALL_SIZE/2, BALL_SIZE/2, 0, Math.PI*2);
             ctx.fill();
+            ctx.shadowBlur = 0;
         }
 
         function gameLoop() {
-            if (gameOver) return;
             if (!paused) update();
             draw();
-            animationId = requestAnimationFrame(gameLoop);
+            if (!gameOver) animationId = requestAnimationFrame(gameLoop);
         }
 
         function startGame() {
@@ -488,13 +525,14 @@
             player2.score = 0;
             gameOver = false;
             paused = false;
+            gameStarted = true;
+            rallyCount = 0;
             
             resetPositions();
             updateScoreDisplay();
             
             startOverlay.classList.add('hidden');
             gameoverOverlay.classList.add('hidden');
-            gameStarted = true;
             
             animationId = requestAnimationFrame(gameLoop);
         }
@@ -507,7 +545,7 @@
             document.getElementById('winner-text').textContent = winner;
             document.getElementById('final-score').textContent = `${player1.score} - ${player2.score}`;
             
-            // High score handling (Rally count)
+            // High Score (Rally)
             const score = maxRally;
             const highScoreSection = document.getElementById('high-score-section');
             
@@ -515,33 +553,28 @@
                  highScoreSection.innerHTML = `
                     <p style="font-family: var(--font-pixel); font-size: 14px; color: var(--neon-green); margin: 20px 0 10px;">NEW RALLY RECORD!</p>
                     <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
-                        <input type="text" class="hs-input" maxlength="1" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;">
-                        <input type="text" class="hs-input" maxlength="1" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;">
-                        <input type="text" class="hs-input" maxlength="1" style="width: 40px; height: 50px; background: #111; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--font-pixel); font-size: 20px; text-align: center; text-transform: uppercase;">
+                        <input type="text" class="hs-input" maxlength="1" style="width: 30px; height: 40px; background: #111; border: 2px solid var(--neon-cyan); color: #fff; text-align: center;">
+                        <input type="text" class="hs-input" maxlength="1" style="width: 30px; height: 40px; background: #111; border: 2px solid var(--neon-cyan); color: #fff; text-align: center;">
+                        <input type="text" class="hs-input" maxlength="1" style="width: 30px; height: 40px; background: #111; border: 2px solid var(--neon-cyan); color: #fff; text-align: center;">
                     </div>
-                    <button id="save-score-btn" class="start-btn" style="background: var(--neon-green); color: black;">SAVE</button>
+                    <button id="save-score-btn" class="start-btn">SAVE</button>
                  `;
                  
-                 // Keyboard handling for inputs (same as Space Invaders)
                  const inputs = highScoreSection.querySelectorAll('.hs-input');
-                 inputs.forEach((input, i) => {
-                     input.addEventListener('focus', () => {
-                         input.select();
-                         document.body.classList.add('keyboard-open');
-                         window.scrollTo(0, 0);
+                 inputs.forEach((inp, i) => {
+                     inp.addEventListener('input', (e) => {
+                         e.target.value = e.target.value.toUpperCase();
+                         if (e.target.value && i < 2) inputs[i+1].focus();
                      });
-                     input.addEventListener('blur', () => document.body.classList.remove('keyboard-open'));
-                     input.addEventListener('input', (e) => {
-                        e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
-                        if (e.target.value && i < 2) inputs[i + 1].focus();
+                     inp.addEventListener('focus', () => {
+                         document.body.classList.add('keyboard-open'); // Helps if we had logic for it
                      });
                  });
                  
                  document.getElementById('save-score-btn').addEventListener('click', () => {
-                      const name = Array.from(inputs).map(i => i.value || ' ').join('');
-                      addHighScore(GAME_NAME, name, score);
-                      highScoreEl.textContent = getTopScore(GAME_NAME).toLocaleString();
-                      highScoreSection.innerHTML = '<p style="color: var(--neon-green);">SAVED!</p>';
+                     const name = Array.from(inputs).map(i => i.value || ' ').join('');
+                     addHighScore(GAME_NAME, name, score);
+                     highScoreSection.innerHTML = '<p style="color:var(--neon-green)">SAVED!</p>';
                  });
             }
             
@@ -554,13 +587,23 @@
             paused = false;
             pauseOverlay.classList.add('hidden');
         });
-        document.getElementById('quit-btn').addEventListener('click', () => window.location.href = '../index.html');
         document.getElementById('got-it-btn').addEventListener('click', () => {
-            instructionsModal.classList.add('hidden');
-            localStorage.setItem('pongMobileFirstPlay', 'true');
+             localStorage.setItem('pongMobileLandscapeFirstPlay', 'true');
+             instructionsModal.classList.add('hidden');
         });
 
         init();
+        
+        // Handle external pause/gameover touches
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'A') return;
+            if (gameStarted && !gameOver && !paused && !e.target.closest('#touch-zone')) {
+                // pause on touch center? No, user might touch accidentally.
+                // Let's rely on PAUSE text/button which I haven't added on screen?
+                // I'll add a pause button to the HUD for clarity? 
+                // Currently "Back" button is there.
+            }
+        });
 
     </script>
 </body>

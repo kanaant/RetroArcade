@@ -729,6 +729,10 @@
         
         // Touch Controls - tap to fire
         canvas.addEventListener('touchstart', (e) => {
+            // Allow UI interaction (though this is on canvas, overlays might be on top, but good practice if bubbles)
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
+                return;
+            }
             if (!gameStarted || gameOver || paused) return;
             e.preventDefault();
             
