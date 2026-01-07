@@ -50,6 +50,10 @@
 
         .game-container {
             position: relative;
+            /* Overlay shared theme to fix layout */
+            display: block;
+            min-height: auto;
+            padding: 0;
         }
 
         #game-canvas {
@@ -474,6 +478,10 @@
         document.getElementById('restart-btn').addEventListener('click', startGame);
 
         document.addEventListener('keydown', (e) => {
+            if(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                e.preventDefault();
+            }
+
             if (e.key === 'p' || e.key === 'P') {
                 togglePause();
                 return;

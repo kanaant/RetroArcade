@@ -278,6 +278,10 @@
         // --- INPUT HANDLING ---
         
         document.addEventListener('touchstart', e => {
+            // Allow UI interactions (Back button, etc)
+            if (e.target.tagName === 'BUTTON' || e.target.closest('button') || 
+                e.target.tagName === 'A' || e.target.closest('a')) return;
+
             if (!gameStarted || gameOver || paused) return;
             e.preventDefault();
             
@@ -321,6 +325,10 @@
         }, { passive: false });
         
         document.addEventListener('touchend', e => {
+             // Allow button/link clicks (like Got It, Back) to propagate
+             if (e.target.tagName === 'BUTTON' || e.target.closest('button') || 
+                 e.target.tagName === 'A' || e.target.closest('a')) return;
+             
              e.preventDefault();
              for (let i = 0; i < e.changedTouches.length; i++) {
                  if (e.changedTouches[i].identifier === touchState.moveId) {

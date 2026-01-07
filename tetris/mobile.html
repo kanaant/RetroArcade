@@ -28,7 +28,7 @@
             height: 100%;
             padding: 10px;
             padding-bottom: 30px; /* Interaction space */
-            padding-top: 5px;
+            padding-top: 15px;
             box-sizing: border-box;
             justify-content: flex-start;
         }
@@ -407,7 +407,7 @@
                 </div>
             </div>
 
-            <div class="touch-hint">SWIPE TO MOVE • TAP TO ROTATE • SWIPE UP TO DROP</div>
+            <div class="touch-hint">SWIPE TO MOVE • TAP TO ROTATE • SWIPE UP TO ROTATE • SWIPE DOWN TO DROP</div>
         </div>
     </div>
 
@@ -437,7 +437,7 @@
         
         <div class="instruction-item">
             <div class="gesture-icon">👆⬆️</div>
-            <div class="gesture-text">SWIPE UP for hard drop</div>
+            <div class="gesture-text">SWIPE UP to rotate</div>
         </div>
         
         <div class="instruction-item">
@@ -913,6 +913,7 @@
             touchStartY = touch.clientY;
             touchStartTime = Date.now();
             isSwiping = false;
+            this.hasRotated = false;
         }
 
         function handleTouchMove(e) {
@@ -941,8 +942,11 @@
                     // Swipe down - soft drop
                     softDrop();
                 } else {
-                    // Swipe up - hard drop
-                    hardDrop();
+                    // Swipe up - rotate (once per swipe)
+                    if (!this.hasRotated) {
+                        rotate();
+                        this.hasRotated = true;
+                    }
                 }
                 touchStartY = touch.clientY;
             }

@@ -615,7 +615,21 @@
         updateHighScores();
       });
 
-      // Add keyboard navigation
+      // Scroll Memory Logic
+      window.addEventListener('load', () => {
+          const scrollPos = sessionStorage.getItem('arcadeScrollPos');
+          if (scrollPos) {
+              window.scrollTo(0, parseInt(scrollPos));
+          }
+      });
+
+      document.querySelectorAll('.game-card').forEach(card => {
+          card.addEventListener('click', () => {
+              sessionStorage.setItem('arcadeScrollPos', window.scrollY);
+          });
+      });
+
+      // KEYBOARD NAVIGATION
       document.addEventListener("keydown", (e) => {
         const cards = document.querySelectorAll(".game-card");
         const focused = document.activeElement;
