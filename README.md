@@ -1,7 +1,7 @@
 # 🎮 Retro Arcade
 
 A collection of classic 80s-style arcade games built with **vanilla HTML, CSS, and JavaScript**. This project is a quick exercise in creating simple retro games without any frameworks or libraries.
-
+![Retro Arcade Preview](retro_arcade_preview.png)
 ![Retro Arcade](https://img.shields.io/badge/Vanilla-HTML%2FCSS%2FJS-blue)
 ![Games](https://img.shields.io/badge/Games-6-green)
 
