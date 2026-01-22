@@ -3,7 +3,7 @@
  * Uses server API for persistence (with localStorage fallback)
  */
 
-const API_BASE = "/api/scores";
+const API_BASE = "api/scores";
 const MAX_SCORES_PER_GAME = 10;
 
 // Stub for backwards compatibility (not used - using inline HTML now)
@@ -207,7 +207,7 @@ function saveLocalScore(gameName, entry) {
 
   const position = scores[gameName].findIndex(
     (s) =>
-      s.name === entry.name && s.score === entry.score && s.date === entry.date
+      s.name === entry.name && s.score === entry.score && s.date === entry.date,
   );
 
   localStorage.setItem("retroArcade_highScores", JSON.stringify(scores));

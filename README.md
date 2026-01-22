@@ -3,18 +3,23 @@
 A collection of classic 80s-style arcade games built with **vanilla HTML, CSS, and JavaScript**. This project is a quick exercise in creating simple retro games without any frameworks or libraries.
 ![Retro Arcade Preview](retro_arcade_preview.png)
 ![Retro Arcade](https://img.shields.io/badge/Vanilla-HTML%2FCSS%2FJS-blue)
-![Games](https://img.shields.io/badge/Games-6-green)
+![Games](https://img.shields.io/badge/Games-11-green)
 
 ## 🕹️ Games Included
 
-| Game               | Description                               |
-| ------------------ | ----------------------------------------- |
-| **Tetris**         | Stack falling blocks and clear lines      |
-| **Pac-Man**        | Navigate the maze, eat dots, avoid ghosts |
-| **Snake**          | Grow your snake by eating food            |
-| **Breakout**       | Destroy bricks with a bouncing ball       |
-| **Space Invaders** | Defend Earth from alien invaders          |
-| **Pong**           | Classic paddle vs paddle (AI or 2-player) |
+| Game                | Description                                     |
+| ------------------- | ----------------------------------------------- |
+| **Asteroids**       | Blast through asteroid fields in your spaceship |
+| **Tetris**          | Stack falling blocks and clear lines            |
+| **Pac-Man**         | Navigate the maze, eat dots, avoid ghosts       |
+| **Snake**           | Grow your snake by eating food                  |
+| **Breakout**        | Destroy bricks with a bouncing ball             |
+| **Space Invaders**  | Defend Earth from alien invaders                |
+| **Pong**            | Classic paddle vs paddle (AI or 2-player)       |
+| **Frogger**         | Guide the frog across highways and rivers       |
+| **Tron**            | Light cycle battle - trap your opponent         |
+| **Missile Command** | Defend your cities from incoming missiles       |
+| **Centipede**       | Blast the bug through the mushroom field        |
 
 ## ✨ Features
 
